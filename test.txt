@@ -1,0 +1,108 @@
+name: Wang Zewen
+email:example@gmail.com
+
+school: UWC Changshu
+start date: 2021-09-01
+end date: 2024-06-30
+courses: AP Calculus BC, AP Microeconomics, AP Macroeconomics
+
+# Community
+
+Role: Member, President
+Org: Table Tennis Club
+Start date: G10
+End date: G11
+Hours per week: 2
+Weeks per year: ?
+-	Recruited 15 members, doubling the club membership.
+-	Initiated and organized a community event, which brought professional players to share their stories, demonstrate technical skills, and engage in small ping-pong games with around 25 participants.
+-	Organized friendly matches with Kunshan Duke University and Changshu Institute of Technology.
+-	Successfully lobbied the School Olympics Committee to introduce table tennis as an event in the School Olympics.
+
+Role: Organizer
+Org: Intergenerational Engagement with Senior Table Tennis Players
+Start date: 2022/09/30
+End date: 2022-10-06
+Hours per week: ?
+Weeks per year: ?
+-	Organized interactions between members of the school Table Tennis Club and senior citizens of the Changshu Senior Table Tennis Association, including friendly matches, small games, and sharing knowledge of table tennis history and stories.
+
+Role: Co-Organizer
+Org: Math Circle
+Start date: G10
+End date: G10
+Hours per week: 20
+Weeks per year: ?
+-	Co-organized fun activities such as Trivia Night, which offered math-related games and puzzles, and LaTeX Workshop, each drawing around 20 participants.
+-	By interviewing senior students at school, compiled a guidebook on IB Internal Assessment to assist new students.
+-	Volunteered to tutor 20 students in a local school for children of migrant workers, teaching them mathematics and guiding them to develop their own projects.
+
+Role: Member
+Org: New Chapter Library Committee
+Start date: G11
+End date: G11
+Hours per week: 1
+Weeks per year: ?
+-	Organized “book-tasting” nights to encourage students to explore new genres and expand the library's collection.
+-	Collaborated with Changshu movable library to create a convenient system for students and teachers to borrow books by scanning a QR code.
+-	Set up a movable newsstand to promote school magazines and publish various school announcements.
+
+Role: Volunteer
+Org: Phoenix Bookstore
+Start date: G9
+End date: G9
+Hours per week: 1
+Weeks per year: 8
+-	Categorized and organized books. Assisted customers in locating desired titles.
+
+Role: ?
+Org: ?
+Start date: G9
+End date: G9
+Hours per week: 1
+Weeks per year: 40
+-	Ensured smooth operation of student-run clubs and proposed ideas for improvement.
+-	Received School Club Management Outstanding Director award.
+
+Role: Study Group Leader
+Start date: G9
+End date: G9
+Hours per week: 2
+Weeks per year: ?
+-	Initiated and led the study group to assist classmates in challenging subjects.
+
+# Academic
+
+Role: Student and Researcher
+Org: Cathaypath Institute of Science
+Start date: G11
+End date: G11
+Hours per week: 3
+Weeks per year: 10
+-	Studied price dispersion and search cost in China’s online stores in collaborated with a teammate under the guidance of Professor Alexei Parakhonyak of the University of Oxford.
+-	Co-authored a 10-page paper, “A Measurement of Price Dispersion and Search Cost in China's Online Stores,” forthcoming in Applied Economics and Policy Studies or Advances in Economics Management and Political Sciences.
+
+Role: Independent Research in Social Science
+Start date: G11
+End date: G11
+Hours per week: 2
+Weeks per year: 8
+-	Studied fundamental social science research techniques under the guidance of Qianqing Huang, history PhD candidate at UCLA.
+-	Completed a 14-page paper, “How Do Gifts with Purchase Change Our Spending Habits?”
+
+Role: Participant
+Org: Marshall Society Essay Competition
+Start date: G11
+End date: G11
+Hours per week: 3
+Weeks per year: 8
+-	Surveyed the relevant literature and completed a 9-page essay analyzing the impact of blockchain on supply chains.
+
+Role: Researcher
+Org: Passion Project at School
+Start date: G10
+End date: G10
+Hours per week: 1
+Weeks per year: 40
+-	Studied online micro-credit loan and its use by social service groups.
+-	Authored a 14-page paper arguing that [what was your conclusion?].
