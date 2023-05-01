@@ -106,3 +106,9 @@ Hours per week: 1
 Weeks per year: 40
 -	Studied online micro-credit loan and its use by social service groups.
 -	Authored a 14-page paper arguing that [what was your conclusion?].
+
+Skillset name: Sports played
+Skills: Ping pong, soccer
+
+award: Outstanding Club Manager
+award date: 2022
