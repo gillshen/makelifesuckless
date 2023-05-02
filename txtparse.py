@@ -1,5 +1,4 @@
 import dataclasses
-# import datetime
 import re
 
 
@@ -148,26 +147,3 @@ def parse(src: str) -> CV:
 def _match(compiled_pattern: re.Pattern, text: str):
     if mo := compiled_pattern.match(text):
         return mo.group(1).strip()
-
-
-def _test():
-    with open('test.txt', encoding='utf-8') as f:
-        cv = parse(f.read())
-
-    print(f'{cv.name=}')
-    print(f'{cv.email=}')
-    print(f'{cv.address=}')
-    print(f'{cv.phone=}')
-
-    for education in cv.education:
-        print(education)
-    for activity in cv.activities:
-        print(activity)
-    for award in cv.awards:
-        print(award)
-    for skillset in cv.skillsets:
-        print(skillset)
-
-
-if __name__ == '__main__':
-    _test()
