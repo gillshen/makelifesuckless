@@ -8,7 +8,8 @@ ENVIRONMENT = jinja2.Environment(
     comment_start_string='<#',
     comment_end_string='#>',
     trim_blocks=False,
-    keep_trailing_newline=True
+    lstrip_blocks=True,
+    keep_trailing_newline=True,
 )
 
 

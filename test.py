@@ -24,17 +24,12 @@ def test_parse():
 def test_render():
     args = {
         'name': 'Alice',
-        'activities': ['hiking', 'rowing', 'digging graves']
-    }
-    print(render('tests/test_template.tex', **args))
-
-    args = {
-        'name': 'Bob',
-        'activities': []
+        'activities': ['hiking', 'rowing', 'digging graves'],
+        'awards': ['silliest walker', 'best mole']
     }
     print(render('tests/test_template.tex', **args))
 
 
 if __name__ == '__main__':
     test_parse()
-    # test_render()
+    test_render()
