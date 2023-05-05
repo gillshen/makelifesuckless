@@ -1,9 +1,13 @@
 \documentclass[<< settings.font_size_in_point >>pt]{article}
 
+\usepackage{xkeyval}
 \usepackage{microtype}
 \usepackage{enumitem}
 \usepackage{fontspec}
+\usepackage[skip=.1\baselineskip plus 0pt]{parskip}
 \usepackage[top=<< settings.top_margin_in_inch >>in, bottom=<< settings.bottom_margin_in_inch >>in, left=<< settings.left_margin_in_inch >>in, right=<< settings.right_margin_in_inch >>in]{geometry}
+
+\raggedbottom
 
 \setmainfont{<< settings.main_font >>}<! if settings.old_style_numbers !>[Numbers={OldStyle, Proportional}]<! endif !>
 
@@ -17,7 +21,7 @@
 \newenvironment{activity}[1]{%
     \begingroup
     \setkeys{activitykeys}{org=, startdate=, enddate=, hoursperweek=, weeksperyear=, #1}%
-    \textbf{\activity@role, \activity@org}\par
+    \textbf{\activity@role\ifx\activity@org\empty\else{, \activity@org}\fi}\par
     \activity@startdate\,--\,\activity@enddate
     \hfill
     \activity@hoursperweek\ hours/week, \activity@weeksperyear\ weeks/year\par
@@ -39,7 +43,10 @@
 	<< cv.phone >> | << cv.email >> | << cv.address >>
 \end{center}
 
-<! for activity in cv.activities !>
+<! for section in cv.activity_sections !>
+\section*{<< section >>}
+
+<! for activity in cv.activities_of_section(section) !>
 \begin{activity}{%
     role={<< activity.role >>},
     org={<< activity.org >>},
@@ -52,6 +59,7 @@
 \item << descr >>
 <! endfor !>
 \end{activity}
+<! endfor !>
 <! endfor !>
 
 \end{document}

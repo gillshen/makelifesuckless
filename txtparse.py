@@ -3,86 +3,90 @@ import re
 
 
 def _compile(keyword):
-    return re.compile(rf'^\s*{keyword}\s*:(.*)$', flags=re.IGNORECASE)
+    return re.compile(rf"^\s*{keyword}\s*:(.*)$", flags=re.IGNORECASE)
 
 
-NAME = _compile('name')
-EMAIL = _compile('email')
-ADDRESS = _compile('address')
-PHONE = _compile('phone')
+NAME = _compile("name")
+EMAIL = _compile("email")
+ADDRESS = _compile("address")
+PHONE = _compile("phone")
 
-START_DATE = _compile(r'start\s+date')
-END_DATE = _compile(r'end\s+date')
+START_DATE = _compile(r"start\s+date")
+END_DATE = _compile(r"end\s+date")
 
-SCHOOL = _compile('school')
-DEGREE = _compile('degree')
-GPA = _compile('gpa')
-COURSES = _compile('courses')
+SCHOOL = _compile("school")
+DEGREE = _compile("degree")
+GPA = _compile("gpa")
+COURSES = _compile("courses")
 
-ROLE = _compile('role')
-ORG = _compile('org')
-HOURS = _compile(r'hours\s+per\s+week')
-WEEKS = _compile(r'weeks\s+per\s+year')
-DESCRIPTION = re.compile(r'^\s*-\s*(.+)$')
-SECTION = re.compile(r'^\s*#\s*(.+)$')
+ROLE = _compile("role")
+ORG = _compile("org")
+HOURS = _compile(r"hours\s+per\s+week")
+WEEKS = _compile(r"weeks\s+per\s+year")
+DESCRIPTION = re.compile(r"^\s*-\s*(.+)$")
+SECTION = re.compile(r"^\s*#\s*(.+)$")
 
-AWARD = _compile('award')
-AWARD_DATE = _compile(r'award\s+date')
+AWARD = _compile("award")
+AWARD_DATE = _compile(r"award\s+date")
 
-SKILLSET_NAME = _compile(r'skillset\s+name')
-SKILLS = _compile('skills')
+SKILLSET_NAME = _compile(r"skillset\s+name")
+SKILLS = _compile("skills")
 
 
 @dataclasses.dataclass
 class Education:
     school: str
-    start_date: str = ''
-    end_date: str = ''
-    degree: str = ''
-    gpa: str = ''
-    courses: str = ''
+    start_date: str = ""
+    end_date: str = ""
+    degree: str = ""
+    gpa: str = ""
+    courses: str = ""
 
 
 @dataclasses.dataclass
 class Activity:
     role: str
-    org: str = ''
-    start_date: str = ''
-    end_date: str = ''
-    hours_per_week: str = ''
-    weeks_per_year: str = ''
+    org: str = ""
+    start_date: str = ""
+    end_date: str = ""
+    hours_per_week: str = ""
+    weeks_per_year: str = ""
     descriptions: list[str] = dataclasses.field(default_factory=list)
-    section: str = ''
+    section: str = ""
 
 
 @dataclasses.dataclass
 class Award:
     name: str
-    date: str = ''
+    date: str = ""
 
 
 @dataclasses.dataclass
 class SkillSet:
     name: str
-    skills: str = ''
+    skills: str = ""
 
 
 @dataclasses.dataclass
 class CV:
-    name: str = ''
-    email: str = ''
-    address: str = ''
-    phone: str = ''
+    name: str = ""
+    email: str = ""
+    address: str = ""
+    phone: str = ""
     education: list[Education] = dataclasses.field(default_factory=list)
+    activity_sections: list[str] = dataclasses.field(default_factory=list)
     activities: list[Activity] = dataclasses.field(default_factory=list)
     awards: list[Award] = dataclasses.field(default_factory=list)
     skillsets: list[SkillSet] = dataclasses.field(default_factory=list)
+
+    def activities_of_section(self, section: str):
+        return [a for a in self.activities if a.section == section]
 
 
 def parse(src: str) -> CV:
     cv = CV()
     curren_data_object = None
-    current_section = ''
+    current_section = ""
 
     for line in src.splitlines():
         if not line.strip():
@@ -99,6 +103,7 @@ def parse(src: str) -> CV:
 
         elif new_section := _match(SECTION, line):
             current_section = new_section
+            cv.activity_sections.append(current_section)
         elif school := _match(SCHOOL, line):
             curren_data_object = Education(school=school)
             cv.education.append(curren_data_object)
@@ -139,7 +144,7 @@ def parse(src: str) -> CV:
             curren_data_object.skills = skills
 
         else:
-            print(f'unparseable line: {line!r}')
+            print(f"unparseable line: {line!r}")
 
     return cv
 
