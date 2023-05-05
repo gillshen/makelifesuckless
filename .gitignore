@@ -168,3 +168,4 @@ cython_debug/
 *.aux
 *.synctex.gz
 *.pdf
+tests/test_result.tex

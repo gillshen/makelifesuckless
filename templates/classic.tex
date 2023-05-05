@@ -1,0 +1,57 @@
+\documentclass[<< settings.font_size_in_point >>pt]{article}
+
+\usepackage{microtype}
+\usepackage{enumitem}
+\usepackage{fontspec}
+\usepackage[top=<< settings.top_margin_in_inch >>in, bottom=<< settings.bottom_margin_in_inch >>in, left=<< settings.left_margin_in_inch >>in, right=<< settings.right_margin_in_inch >>in]{geometry}
+
+\setmainfont{<< settings.main_font >>}<! if settings.old_style_numbers !>[Numbers={OldStyle, Proportional}]<! endif !>
+
+\makeatletter
+\define@key{activitykeys}{role}{\def\activity@role{#1}}
+\define@key{activitykeys}{org}{\def\activity@org{#1}}
+\define@key{activitykeys}{startdate}{\def\activity@startdate{#1}}
+\define@key{activitykeys}{enddate}{\def\activity@enddate{#1}}
+\define@key{activitykeys}{hoursperweek}{\def\activity@hoursperweek{#1}}
+\define@key{activitykeys}{weeksperyear}{\def\activity@weeksperyear{#1}}
+\newenvironment{activity}[1]{%
+    \begingroup
+    \setkeys{activitykeys}{org=, startdate=, enddate=, hoursperweek=, weeksperyear=, #1}%
+    \textbf{\activity@role, \activity@org}\par
+    \activity@startdate\,--\,\activity@enddate
+    \hfill
+    \activity@hoursperweek\ hours/week, \activity@weeksperyear\ weeks/year\par
+    \endgroup
+    \begin{itemize}[nosep]
+}{%
+    \end{itemize}\par\addvspace{\medskipamount}
+}
+\makeatother
+
+\begin{document}
+
+\begin{center}
+	\LARGE\bfseries
+	<< cv.name >>
+\end{center}
+
+\begin{center}
+	<< cv.phone >> | << cv.email >> | << cv.address >>
+\end{center}
+
+<! for activity in cv.activities !>
+\begin{activity}{%
+    role={<< activity.role >>},
+    org={<< activity.org >>},
+    startdate={<< activity.start_date >>},
+    enddate={<< activity.end_date >>},
+    hoursperweek={<< activity.hours_per_week >>},
+    weeksperyear={<< activity.weeks_per_year >>}
+}
+<! for descr in activity.descriptions !>
+\item << descr >>
+<! endfor !>
+\end{activity}
+<! endfor !>
+
+\end{document}
