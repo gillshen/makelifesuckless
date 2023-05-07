@@ -4,20 +4,50 @@
 \usepackage{microtype}
 \usepackage{enumitem}
 \usepackage{fontspec}
+\usepackage{titlesec}
+\usepackage{calc} % for calculating remaining length
+
 \usepackage[skip=.1\baselineskip plus 0pt]{parskip}
 \usepackage[top=<< settings.top_margin_in_inch >>in, bottom=<< settings.bottom_margin_in_inch >>in, left=<< settings.left_margin_in_inch >>in, right=<< settings.right_margin_in_inch >>in]{geometry}
 
 \raggedbottom
 
 \setmainfont{<< settings.main_font >>}<! if settings.old_style_numbers !>[Numbers={OldStyle, Proportional}]<! endif !>
+\titleformat{\section}[hang]{\bfseries\large}{}{0pt}{}
+
+\newlength{\remaining}
+\newcommand{\sectionstyle}[1]{%
+    \setlength{\remaining}{\textwidth-\widthof{\addfontfeature{LetterSpace=6.0}\large\uppercase{#1}}}%
+    \underline{\addfontfeature{LetterSpace=6.0}\uppercase{#1}\hspace{\remaining}}%
+}
 
 \makeatletter
+\define@key{edukeys}{startdate}{\def\edu@startdate{#1}}
+\define@key{edukeys}{enddate}{\def\edu@enddate{#1}}
+\define@key{edukeys}{degree}{\def\edu@degree{#1}}
+\define@key{edukeys}{major}{\def\edu@major{#1}}
+\define@key{edukeys}{minor}{\def\edu@minor{#1}}
+\define@key{edukeys}{gpa}{\def\edu@gpa{#1}}
+\define@key{edukeys}{courses}{\def\edu@courses{#1}}
+
+\newcommand{\edu}[2]{%
+    \begingroup
+    \setkeys{edukeys}{startdate=, enddate=, degree=, major=, minor=, gpa=, courses=, #2}%
+    \textbf{#1\ifx\edu@degree\empty\else{ | \edu@degree}\fi}\par
+    \edu@startdate\,--\,\edu@enddate\par
+    \ifx\edu@gpa\empty\else{GPA: \edu@gpa\par}\fi
+    \ifx\edu@major\empty\else{Major: \edu@major\ifx\edu@minor\empty\else{ | Minor: \edu@minor}\fi\par}\fi
+    \ifx\edu@courses\empty\else{Courses: \edu@courses\par}\fi
+    \endgroup
+}
+
 \define@key{activitykeys}{role}{\def\activity@role{#1}}
 \define@key{activitykeys}{org}{\def\activity@org{#1}}
 \define@key{activitykeys}{startdate}{\def\activity@startdate{#1}}
 \define@key{activitykeys}{enddate}{\def\activity@enddate{#1}}
 \define@key{activitykeys}{hoursperweek}{\def\activity@hoursperweek{#1}}
 \define@key{activitykeys}{weeksperyear}{\def\activity@weeksperyear{#1}}
+
 \newenvironment{activity}[1]{%
     \begingroup
     \setkeys{activitykeys}{org=, startdate=, enddate=, hoursperweek=, weeksperyear=, #1}%
@@ -39,6 +69,7 @@
 	\LARGE\bfseries
 	<< cv.name >>
 \end{center}
+\addvspace{\medskipamount}
 <!- endif !>
 
 <! if cv.email or cv.phone or cv.address or cv.website -!>
@@ -48,8 +79,24 @@
 \end{center}
 <!- endif !>
 
+<! if cv.education -!>
+\section[Education]{\sectionstyle{Education}}
+
+<! for edu in cv.education !>
+\edu{<< edu.school >>}{%
+    startdate={<< edu.start_date >>},
+    enddate={<< edu.end_date >>},
+    degree={<< edu.degree >>},
+    major={<< edu.major >>},
+    minor={<< edu.minor >>},
+    gpa={<< edu.gpa >>},
+    courses={<< edu.courses >>}
+}
+<!- endfor -!>
+<!- endif !>
+
 <! for section in cv.activity_sections !>
-\section*{<< section >>}
+\section[<< section >>]{\sectionstyle{<< section >>}}
 
 <! for activity in cv.activities_of_section(section) !>
 \begin{activity}{%

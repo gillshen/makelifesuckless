@@ -8,6 +8,8 @@ school: UWC Changshu
 start date: 2021-09-01
 end date: 2024-06-30
 courses: AP Calculus BC, AP Microeconomics, AP Macroeconomics
+gpa: 3.87
+degree: High School Diploma
 
 # Community
 

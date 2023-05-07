@@ -17,6 +17,8 @@ END_DATE = _compile(r"end\s+date")
 
 SCHOOL = _compile("school")
 DEGREE = _compile("degree")
+MAJOR = _compile("major")
+MINOR = _compile("minor")
 GPA = _compile("gpa")
 COURSES = _compile("courses")
 
@@ -40,6 +42,8 @@ class Education:
     start_date: str = ""
     end_date: str = ""
     degree: str = ""
+    major: str = ""
+    minor: str = ""
     gpa: str = ""
     courses: str = ""
 
@@ -128,6 +132,10 @@ def parse(src: str) -> CV:
 
         elif degree := _match(DEGREE, line):
             curren_data_object.degree = degree
+        elif major := _match(MAJOR, line):
+            curren_data_object.major = major
+        elif minor := _match(MINOR, line):
+            curren_data_object.minor = minor
         elif gpa := _match(GPA, line):
             curren_data_object.gpa = gpa
         elif courses := _match(COURSES, line):
