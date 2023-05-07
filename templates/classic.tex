@@ -34,14 +34,19 @@
 
 \begin{document}
 
+<! if cv.name -!>
 \begin{center}
 	\LARGE\bfseries
 	<< cv.name >>
 \end{center}
+<!- endif !>
 
+<! if cv.email or cv.phone or cv.address or cv.website -!>
+<! set bio = ' | '.join([cv.email, cv.phone, cv.address, cv.website]) -!>
 \begin{center}
-	<< cv.phone >> | << cv.email >> | << cv.address >>
+    << bio|replace('  |', '')|trim('| ') >>
 \end{center}
+<!- endif !>
 
 <! for section in cv.activity_sections !>
 \section*{<< section >>}
@@ -55,11 +60,10 @@
     hoursperweek={<< activity.hours_per_week >>},
     weeksperyear={<< activity.weeks_per_year >>}
 }
-<! for descr in activity.descriptions !>
-\item << descr >>
-<! endfor !>
+<! for descr in activity.descriptions -!>
+    \item << descr >>
+<! endfor -!>
 \end{activity}
 <! endfor !>
 <! endfor !>
-
 \end{document}

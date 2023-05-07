@@ -2,6 +2,7 @@ name: Wang Zewen
 email:example@gmail.com
 phone: +86 1234567890
 address: Changshu, Jiangsu
+website: www.fakeurl.com
 
 school: UWC Changshu
 start date: 2021-09-01

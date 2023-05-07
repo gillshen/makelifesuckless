@@ -8,8 +8,9 @@ def _compile(keyword):
 
 NAME = _compile("name")
 EMAIL = _compile("email")
-ADDRESS = _compile("address")
 PHONE = _compile("phone")
+ADDRESS = _compile("address")
+WEBSITE = _compile("website")
 
 START_DATE = _compile(r"start\s+date")
 END_DATE = _compile(r"end\s+date")
@@ -73,6 +74,7 @@ class CV:
     email: str = ""
     address: str = ""
     phone: str = ""
+    website: str = ""
     education: list[Education] = dataclasses.field(default_factory=list)
     activity_sections: list[str] = dataclasses.field(default_factory=list)
     activities: list[Activity] = dataclasses.field(default_factory=list)
@@ -96,10 +98,12 @@ def parse(src: str) -> CV:
             cv.name = name
         elif email := _match(EMAIL, line):
             cv.email = email
-        elif address := _match(ADDRESS, line):
-            cv.address = address
         elif phone := _match(PHONE, line):
             cv.phone = phone
+        elif address := _match(ADDRESS, line):
+            cv.address = address
+        elif website := _match(WEBSITE, line):
+            cv.website = website
 
         elif new_section := _match(SECTION, line):
             current_section = new_section
