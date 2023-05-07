@@ -1,9 +1,14 @@
 from txtparse import parse
 from render import render, Settings
+from shell import run_lualatex
+
+TXT_PATH = "tests/test_src.txt"
+TEX_PATH = "tests/test_output.tex"
+TEMPLATE_PATH = "templates/classic.tex"
 
 
 def test_parse():
-    with open("tests/test_src.txt", encoding="utf-8") as f:
+    with open(TXT_PATH, encoding="utf-8") as f:
         cv = parse(f.read())
 
     print(f"{cv.name=}")
@@ -32,10 +37,11 @@ def test_render():
 
 def test_parse_and_render():
     settings = Settings(main_font="EB Garamond", secondary_font="EB Garamond")
-    with open("tests/test_src.txt", encoding="utf-8") as f:
+    with open(TXT_PATH, encoding="utf-8") as f:
         cv = parse(f.read())
-    with open("tests/test_result.tex", "w", encoding="utf-8") as f:
-        f.write(render("templates/classic.tex", settings=settings, cv=cv))
+    with open(TEX_PATH, "w", encoding="utf-8") as f:
+        f.write(render(TEMPLATE_PATH, settings=settings, cv=cv))
+    run_lualatex(TEX_PATH, dest_path="tests/test_output.pdf", open_when_done=True)
 
 
 if __name__ == "__main__":
