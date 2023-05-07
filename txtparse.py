@@ -85,7 +85,7 @@ class CV:
     awards: list[Award] = dataclasses.field(default_factory=list)
     skillsets: list[SkillSet] = dataclasses.field(default_factory=list)
 
-    def activities_of_section(self, section: str):
+    def activities_of_section(self, section: str = ""):
         return [a for a in self.activities if a.section == section]
 
 

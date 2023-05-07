@@ -11,85 +11,89 @@ courses: AP Calculus BC, AP Microeconomics, AP Macroeconomics
 gpa: 3.87
 degree: High School Diploma
 
-# Community
+Award: UKMT Mathematics Competition Global Gold
+Award date: 2022
+
+Test: TOEFL
+Score: 106
 
 Role: Member, President
 Org: Table Tennis Club
-Start date: G10
-End date: G11
+Start date: 2021-09
+End date: ongoing
 Hours per week: 2
-Weeks per year: ?
--	Recruited 15 members, doubling the club membership.
--	Initiated and organized a community event, which brought professional players to share their stories, demonstrate technical skills, and engage in small ping-pong games with around 25 participants.
+Weeks per year: 40
+-	Doubled the club membership from 15 to 30.
+-	Initiated and organized a community event, which brought professional players to share their stories, demonstrate technical skills, and engage in small table tennis games with around 25 participants.
+-	Hosted a visit by Paralympic champions where they interacted and played table tennis with over 20 students.
 -	Organized friendly matches with Kunshan Duke University and Changshu Institute of Technology.
 -	Successfully lobbied the School Olympics Committee to introduce table tennis as an event in the School Olympics.
 
 Role: Organizer
 Org: Intergenerational Engagement with Senior Table Tennis Players
-Start date: 2022/09/30
-End date: 2022-10-06
-Hours per week: ?
-Weeks per year: ?
+Start date: 2023-03-15
+End date: 2023-03-15
+Hours per week: 4
+Weeks per year: 1
 -	Organized interactions between members of the school Table Tennis Club and senior citizens of the Changshu Senior Table Tennis Association, including friendly matches, small games, and sharing knowledge of table tennis history and stories.
 
 Role: Co-Organizer
 Org: Math Circle
-Start date: G10
-End date: G10
-Hours per week: 20
-Weeks per year: ?
+Start date: 2021-09
+End date: 2022-05
+Hours per week: 2
+Weeks per year: 40
 -	Co-organized fun activities such as Trivia Night, which offered math-related games and puzzles, and LaTeX Workshop, each drawing around 20 participants.
--	By interviewing senior students at school, compiled a guidebook on IB Internal Assessment to assist new students.
+-	Conducted interviews with senior students regarding their experiences working on IB Internal Assessment and synthesized findings into an 87-page guidebook for junior students, offering practical guidance on topic selection and available resources.
 -	Volunteered to tutor 20 students in a local school for children of migrant workers, teaching them mathematics and guiding them to develop their own projects.
 
 Role: Member
 Org: New Chapter Library Committee
-Start date: G11
-End date: G11
+Start date: 2022-09
+End date: 2023-05 (maybe more)
 Hours per week: 1
-Weeks per year: ?
--	Organized “book-tasting” nights to encourage students to explore new genres and expand the library's collection.
--	Collaborated with Changshu movable library to create a convenient system for students and teachers to borrow books by scanning a QR code.
+Weeks per year: 40
+-	Organized three “book-tasting” nights, with a dozen participants each night, to encourage students to explore new genres and to expand the school library’s collection.
+-	Analyzed the borrowing records of the school library to identify popular titles among students. Partnered with Changshu Movable Library to set up a branch at school, selecting over 100 titles based on students’ preferences.
 -	Set up a movable newsstand to promote school magazines and publish various school announcements.
 
 Role: Volunteer
 Org: Phoenix Bookstore
-Start date: G9
-End date: G9
+Start date: 2018-09
+End date: 2021-05
 Hours per week: 1
 Weeks per year: 8
 -	Categorized and organized books. Assisted customers in locating desired titles.
 
-Role: ?
-Org: ?
-Start date: G9
-End date: G9
+Role: Director
+Org:  Student Club Management Committee, Student Union
+Start date: 2019-09
+End date: 2021-05
 Hours per week: 1
 Weeks per year: 40
--	Ensured smooth operation of student-run clubs and proposed ideas for improvement.
+-	Ensured healthy and efficient operation of student-run clubs by conducting regular inspections, gathering feedback from club members, and collaborating with club leaders and teachers to develop ideas for improvement.
 -	Received School Club Management Outstanding Director award.
 
 Role: Study Group Leader
-Start date: G9
-End date: G9
+Start date: 2019-09
+End date: 2021-05
 Hours per week: 2
-Weeks per year: ?
--	Initiated and led the study group to assist classmates in challenging subjects.
-
-# Academic
+Weeks per year: 40
+-	Initiated and led the study group (4-5 members) to assist classmates in challenging subjects.
 
 Role: Student and Researcher
 Org: Cathaypath Institute of Science
-Start date: G11
-End date: G11
+Start date: 2022-05
+End date: 2022-08
 Hours per week: 3
 Weeks per year: 10
--	Studied price dispersion and search cost in China’s online stores in collaborated with a teammate under the guidance of Professor Alexei Parakhonyak of the University of Oxford.
+-	Studied price dispersion and search cost in China’s online stores in collaboration with a teammate under the guidance of Professor Alexei Parakhonyak of the University of Oxford.
 -	Co-authored a 10-page paper, “A Measurement of Price Dispersion and Search Cost in China's Online Stores,” forthcoming in Applied Economics and Policy Studies or Advances in Economics Management and Political Sciences.
+-	Obtained grade B+.
 
 Role: Independent Research in Social Science
-Start date: G11
-End date: G11
+Start date: 2023-01
+End date: 2023-03
 Hours per week: 2
 Weeks per year: 8
 -	Studied fundamental social science research techniques under the guidance of Qianqing Huang, history PhD candidate at UCLA.
@@ -97,23 +101,16 @@ Weeks per year: 8
 
 Role: Participant
 Org: Marshall Society Essay Competition
-Start date: G11
-End date: G11
+Start date: 2022-07
+End date: 2022-08
 Hours per week: 3
 Weeks per year: 8
 -	Surveyed the relevant literature and completed a 9-page essay analyzing the impact of blockchain on supply chains.
 
 Role: Researcher
 Org: Passion Project at School
-Start date: G10
-End date: G10
+Start date: 2021-09
+End date: 2022-05
 Hours per week: 1
 Weeks per year: 40
--	Studied online micro-credit loan and its use by social service groups.
--	Authored a 14-page paper arguing that [what was your conclusion?].
-
-Skillset name: Sports played
-Skills: Ping pong, soccer
-
-award: Outstanding Club Manager
-award date: 2022
+-	Studied online micro-credit loans and identified features of financial services that are most desirable for low-income groups, summarizing findings in a 14-page paper.

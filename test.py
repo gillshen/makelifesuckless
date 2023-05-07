@@ -41,7 +41,7 @@ def test_parse_and_render():
         cv = parse(f.read())
     with open(TEX_PATH, "w", encoding="utf-8") as f:
         f.write(render(TEMPLATE_PATH, settings=settings, cv=cv))
-    run_lualatex(TEX_PATH, dest_path="tests/test_output.pdf", open_when_done=True)
+    run_lualatex(TEX_PATH, dest_path="tests/test_output.pdf")
 
 
 if __name__ == "__main__":

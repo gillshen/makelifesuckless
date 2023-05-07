@@ -95,9 +95,13 @@
 <!- endfor -!>
 <!- endif !>
 
-<! for section in cv.activity_sections !>
+<!- set sections = cv.activity_sections or [""] -!>
+<! for section in sections !>
+<! if section == "" !>
+\section[Activities]{\sectionstyle{Activities}}
+<! else !>
 \section[<< section >>]{\sectionstyle{<< section >>}}
-
+<! endif !>
 <! for activity in cv.activities_of_section(section) !>
 \begin{activity}{%
     role={<< activity.role >>},
