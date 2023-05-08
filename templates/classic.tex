@@ -39,7 +39,7 @@
     \begingroup
     \setkeys{edukeys}{startdate=, enddate=, degree=, major=, minor=, gpa=, courses=, #2}%
     \textbf{\ifx\edu@degree\empty\else{\edu@degree, }\fi#1}\par
-    \edu@startdate\,--\,\edu@enddate\par
+    \ifx\edu@startdate\empty\edu@enddate\else{\edu@startdate\,--\,\edu@enddate}\fi\par
     \ifx\edu@gpa\empty\else{GPA: \edu@gpa\par}\fi
     \ifx\edu@major\empty\else{Major: \edu@major\ifx\edu@minor\empty\else{ | Minor: \edu@minor}\fi\par}\fi
     \ifx\edu@courses\empty\else{Courses: \edu@courses\par}\fi
@@ -89,8 +89,8 @@
 \section{<! if cv.education !>Education<! else !>Tests<! endif !>}
 <! for edu in cv.education !>
 \edu{<< edu.school >>}{%
-    startdate={<< edu.start_date >>},
-    enddate={<< edu.end_date >>},
+    startdate={<< edu.start_date.to_str(style=settings.date_style, mask=edu.end_date) >>},
+    enddate={<< edu.end_date.to_str(style=settings.date_style) >>},
     degree={<< edu.degree >>},
     major={<< edu.major >>},
     minor={<< edu.minor >>},
@@ -99,14 +99,14 @@
 }
 <!- endfor -!>
 <! for test in cv.tests !>
-\textbf{<< test.name >>}: << test.score >><! if test.date !> (<< test.date >>)<! endif !>
+\textbf{<< test.name >>}: << test.score >><! if test.date !> (<< test.date.to_str(style=settings.date_style) >>)<! endif !>
 <! endfor !>
 <!- endif !>
 
 <! if cv.awards -!>
 \section{Awards}
 <! for award in cv.awards !>
-\textbf{<< award.name >>}, << award.date >>
+\textbf{<< award.name >>}, << award.date.to_str(style=settings.date_style) >>
 <! endfor !>
 <!- endif !>
 
@@ -125,8 +125,8 @@
 \begin{activity}{%
     role={<< activity.role >>},
     org={<< activity.org >>},
-    startdate={<< activity.start_date >>},
-    enddate={<< activity.end_date >>},
+    startdate={<< activity.start_date.to_str(style=settings.date_style, mask=activity.end_date) >>},
+    enddate={<< activity.end_date.to_str(style=settings.date_style) >>},
     hoursperweek={<< activity.hours_per_week >>},
     weeksperyear={<< activity.weeks_per_year >>}
 }

@@ -1,5 +1,10 @@
 import dataclasses
+import datetime
 import re
+
+
+class DateError(ValueError):
+    pass
 
 
 def _compile(keyword):
@@ -41,10 +46,112 @@ SKILLS = _compile("skills")
 
 
 @dataclasses.dataclass
+class FlexDate:
+    year: int = None
+    month: int = None
+    day: int = None
+    fallback: str = ""
+
+    def __bool__(self):
+        return bool(
+            self.year is not None
+            or self.month is not None
+            or self.day is not None
+            or self.fallback
+        )
+
+    @classmethod
+    def from_str(cls, s: str):
+        mo = re.match(r"^(\d{4})(?:([-./])([01]?[0-9]))?(?:\2([0-3]?[0-9]))?$", s)
+        if mo is None:
+            return cls(fallback=s)
+
+        year, _, month, day = mo.groups()
+        year = int(year)
+        if month is None:
+            return cls(year=year)
+
+        month = int(month)
+        if month not in set(range(1, 13)):
+            raise DateError("month out of range")
+        if day is None:
+            return cls(year=year, month=month)
+
+        day = int(day)
+        try:
+            datetime.date(year=year, month=month, day=day)
+        except ValueError:
+            raise DateError("day out of range")
+        else:
+            return cls(year=year, month=month, day=day)
+
+    def to_str(self, *, style: str = "american", mask: "FlexDate" = None):
+        mask_date = mask or FlexDate()
+
+        if self.year is None and self.fallback != mask_date.fallback:
+            return self.fallback
+        elif self.year is None:
+            return ""
+
+        if self.month is None and self.year != mask_date.year:
+            return str(self.year)
+        elif self.month is None:
+            return ""
+
+        # NOTE: the hash sign, as in '%#d', is windows specific;
+        # on Mac/Linux would need to use '-' instead (thus '%-d')
+        if style == "american":
+            if self.year != mask_date.year:
+                format_str = "%b %#d, %Y" if self.day else "%b %Y"
+            elif self.month != mask_date.month:
+                format_str = "%b %#d" if self.day else "%b"
+            else:
+                format_str = "%#d" if self.day and self.day != mask_date.day else ""
+
+        elif style == "american long":
+            if self.year != mask_date.year:
+                format_str = "%B %#d, %Y" if self.day else "%B %Y"
+            elif self.month != mask_date.month:
+                format_str = "%B %#d" if self.day else "%B"
+            else:
+                format_str = "%#d" if self.day and self.day != mask_date.day else ""
+
+        elif style == "american slash":
+            format_str = "%m/%d/%Y" if self.day else "%m/%Y"
+
+        elif style == "british":
+            if self.year != mask_date.year:
+                format_str = "%#d %b %Y" if self.day else "%b %Y"
+            elif self.month != mask_date.month:
+                format_str = "%#d %b" if self.day else "%b"
+            else:
+                format_str = "%#d" if self.day and self.day != mask_date.day else ""
+
+        elif style == "british long":
+            if self.year != mask_date.year:
+                format_str = "%#d %B %Y" if self.day else "%B %Y"
+            elif self.month != mask_date.month:
+                format_str = "%#d %B" if self.day else "%B"
+            else:
+                format_str = "%#d" if self.day and self.day != mask_date.day else ""
+
+        elif style == "british slash":
+            format_str = "%d/%m/%Y" if self.day else "%m/%Y"
+
+        elif style == "iso":
+            format_str = "%Y-%m-%d" if self.day else "%Y-%m"
+        else:
+            raise ValueError(f"unrecognized style: {style}")
+
+        d = datetime.date(year=self.year, month=self.month, day=self.day or 1)
+        return d.strftime(format_str)
+
+
+@dataclasses.dataclass
 class Education:
     school: str
-    start_date: str = ""
-    end_date: str = ""
+    start_date: FlexDate = FlexDate()
+    end_date: FlexDate = FlexDate()
     degree: str = ""
     major: str = ""
     minor: str = ""
@@ -56,8 +163,8 @@ class Education:
 class Activity:
     role: str
     org: str = ""
-    start_date: str = ""
-    end_date: str = ""
+    start_date: FlexDate = FlexDate()
+    end_date: FlexDate = FlexDate()
     hours_per_week: str = ""
     weeks_per_year: str = ""
     descriptions: list[str] = dataclasses.field(default_factory=list)
@@ -67,14 +174,14 @@ class Activity:
 @dataclasses.dataclass
 class Award:
     name: str
-    date: str = ""
+    date: FlexDate = FlexDate()
 
 
 @dataclasses.dataclass
 class Test:
     name: str
     score: str = ""
-    date: str = ""
+    date: FlexDate = FlexDate()
 
 
 @dataclasses.dataclass
@@ -110,70 +217,73 @@ def parse(src: str) -> CV:
         if not line:
             continue
 
-        if name := _match(NAME, line):
-            cv.name = name
-        elif email := _match(EMAIL, line):
-            cv.email = email
-        elif phone := _match(PHONE, line):
-            cv.phone = phone
-        elif address := _match(ADDRESS, line):
-            cv.address = address
-        elif website := _match(WEBSITE, line):
-            cv.website = website
+        try:
+            if name := _match(NAME, line):
+                cv.name = name
+            elif email := _match(EMAIL, line):
+                cv.email = email
+            elif phone := _match(PHONE, line):
+                cv.phone = phone
+            elif address := _match(ADDRESS, line):
+                cv.address = address
+            elif website := _match(WEBSITE, line):
+                cv.website = website
 
-        elif new_section := _match(SECTION, line):
-            current_section = new_section
-            cv.activity_sections.append(current_section)
-        elif school := _match(SCHOOL, line):
-            curren_data_object = Education(school=school)
-            cv.education.append(curren_data_object)
-        elif role := _match(ROLE, line):
-            curren_data_object = Activity(role=role, section=current_section)
-            cv.activities.append(curren_data_object)
-        elif (skillset_name := _match(SKILLSET_NAME, line)) is not None:
-            curren_data_object = SkillSet(name=skillset_name)
-            cv.skillsets.append(curren_data_object)
-        elif award_name := _match(AWARD, line):
-            curren_data_object = Award(name=award_name)
-            cv.awards.append(curren_data_object)
-        elif test_name := _match(TEST, line):
-            curren_data_object = Test(name=test_name)
-            cv.tests.append(curren_data_object)
+            elif new_section := _match(SECTION, line):
+                current_section = new_section
+                cv.activity_sections.append(current_section)
+            elif school := _match(SCHOOL, line):
+                curren_data_object = Education(school=school)
+                cv.education.append(curren_data_object)
+            elif role := _match(ROLE, line):
+                curren_data_object = Activity(role=role, section=current_section)
+                cv.activities.append(curren_data_object)
+            elif (skillset_name := _match(SKILLSET_NAME, line)) is not None:
+                curren_data_object = SkillSet(name=skillset_name)
+                cv.skillsets.append(curren_data_object)
+            elif award_name := _match(AWARD, line):
+                curren_data_object = Award(name=award_name)
+                cv.awards.append(curren_data_object)
+            elif test_name := _match(TEST, line):
+                curren_data_object = Test(name=test_name)
+                cv.tests.append(curren_data_object)
 
-        elif start_date := _match(START_DATE, line):
-            curren_data_object.start_date = start_date
-        elif end_date := _match(END_DATE, line):
-            curren_data_object.end_date = end_date
+            elif start_date := _match(START_DATE, line):
+                curren_data_object.start_date = FlexDate.from_str(start_date)
+            elif end_date := _match(END_DATE, line):
+                curren_data_object.end_date = FlexDate.from_str(end_date)
+            elif x_date := _match(AWARD_DATE, line) or _match(TEST_DATE, line):
+                curren_data_object.date = FlexDate.from_str(x_date)
 
-        elif degree := _match(DEGREE, line):
-            curren_data_object.degree = degree
-        elif major := _match(MAJOR, line):
-            curren_data_object.major = major
-        elif minor := _match(MINOR, line):
-            curren_data_object.minor = minor
-        elif gpa := _match(GPA, line):
-            curren_data_object.gpa = gpa
-        elif courses := _match(COURSES, line):
-            curren_data_object.courses = courses
+            elif degree := _match(DEGREE, line):
+                curren_data_object.degree = degree
+            elif major := _match(MAJOR, line):
+                curren_data_object.major = major
+            elif minor := _match(MINOR, line):
+                curren_data_object.minor = minor
+            elif gpa := _match(GPA, line):
+                curren_data_object.gpa = gpa
+            elif courses := _match(COURSES, line):
+                curren_data_object.courses = courses
 
-        elif org := _match(ORG, line):
-            curren_data_object.org = org
-        elif hours := _match(HOURS, line):
-            curren_data_object.hours_per_week = hours
-        elif weeks := _match(WEEKS, line):
-            curren_data_object.weeks_per_year = weeks
-        elif description := _match(DESCRIPTION, line):
-            curren_data_object.descriptions.append(description)
+            elif org := _match(ORG, line):
+                curren_data_object.org = org
+            elif hours := _match(HOURS, line):
+                curren_data_object.hours_per_week = hours
+            elif weeks := _match(WEEKS, line):
+                curren_data_object.weeks_per_year = weeks
+            elif description := _match(DESCRIPTION, line):
+                curren_data_object.descriptions.append(description)
 
-        elif x_date := _match(AWARD_DATE, line) or _match(TEST_DATE, line):
-            curren_data_object.date = x_date
-        elif score := _match(SCORE, line):
-            curren_data_object.score = score
-        elif skills := _match(SKILLS, line):
-            curren_data_object.skills = skills
+            elif score := _match(SCORE, line):
+                curren_data_object.score = score
+            elif skills := _match(SKILLS, line):
+                curren_data_object.skills = skills
 
-        else:
-            print(f"unparseable line: {line!r}")
+            else:
+                print(f"unparseable line: {line!r}")
+        except DateError:
+            raise
 
     return cv
 

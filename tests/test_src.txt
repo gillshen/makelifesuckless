@@ -20,7 +20,7 @@ test date: 2023-01
 
 Role: Member, President
 Org: Table Tennis Club
-Start date: 2021-09
+Start date: 2021-09-01
 End date: present
 Hours per week: 2
 Weeks per year: 40
@@ -32,8 +32,7 @@ Weeks per year: 40
 
 Role: Organizer
 Org: Intergenerational Engagement with Senior Table Tennis Players
-Start date: 2023-03-15
-End date: 2023-03-15
+end date: 2023-03-15
 Hours per week: 4
 Weeks per year: 1
 -	Organized interactions between members of the school Table Tennis Club and senior citizens of the Changshu Senior Table Tennis Association, including friendly matches, small games, and sharing knowledge of table tennis history and stories.
@@ -51,7 +50,7 @@ Weeks per year: 40
 Role: Member
 Org: New Chapter Library Committee
 Start date: 2022-09
-End date: 2023-05 (maybe more)
+End date: 2023-05
 Hours per week: 1
 Weeks per year: 40
 -	Organized three “book-tasting” nights, with a dozen participants each night, to encourage students to explore new genres and to expand the school library’s collection.

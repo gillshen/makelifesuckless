@@ -26,6 +26,7 @@ class Settings:
     right_margin_in_inch: int = 1
     color_links: bool = False
     url_style: str = "rm"
+    date_style: str = "american"
 
 
 def render(template_filename, **args):
