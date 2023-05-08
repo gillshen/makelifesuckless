@@ -36,7 +36,7 @@
 \newcommand{\edu}[2]{%
     \begingroup
     \setkeys{edukeys}{startdate=, enddate=, degree=, major=, minor=, gpa=, courses=, #2}%
-    \textbf{#1\ifx\edu@degree\empty\else{ | \edu@degree}\fi}\par
+    \textbf{\ifx\edu@degree\empty\else{\edu@degree, }\fi#1}\par
     \edu@startdate\,--\,\edu@enddate\par
     \ifx\edu@gpa\empty\else{GPA: \edu@gpa\par}\fi
     \ifx\edu@major\empty\else{Major: \edu@major\ifx\edu@minor\empty\else{ | Minor: \edu@minor}\fi\par}\fi
@@ -114,7 +114,7 @@
 <! endfor !>
 <!- endif !>
 
-<!- set sections = cv.activity_sections or [""] -!>
+<! set sections = cv.activity_sections or [""] -!>
 <! for section in sections !>
 \section{<! if section == "" !>Activities<! else !><< section >><! endif !>}
 

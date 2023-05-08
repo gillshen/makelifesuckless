@@ -24,7 +24,7 @@ Start date: 2021-09
 End date: present
 Hours per week: 2
 Weeks per year: 40
--	Doubled the club membership from 15 to 30.
+-	Increased club membership by 100%, from 15 to 30.
 -	Initiated and organized a community event, which brought professional players to share their stories, demonstrate technical skills, and engage in small table tennis games with around 25 participants.
 -	Hosted a visit by Paralympic champions where they interacted and played table tennis with over 20 students.
 -	Organized friendly matches with Kunshan Duke University and Changshu Institute of Technology.
@@ -89,7 +89,7 @@ End date: 2022-08
 Hours per week: 3
 Weeks per year: 10
 -	Studied price dispersion and search cost in China’s online stores in collaboration with a teammate under the guidance of Professor Alexei Parakhonyak of the University of Oxford.
--	Co-authored a 10-page paper, “A Measurement of Price Dispersion and Search Cost in China's Online Stores,” forthcoming in Applied Economics and Policy Studies or Advances in Economics Management and Political Sciences.
+-	Co-authored a 10-page paper, "A Measurement of Price Dispersion and Search Cost in China's Online Stores," forthcoming in Applied Economics and Policy Studies or Advances in Economics Management and Political Sciences.
 -	Obtained grade B+.
 
 Role: Independent Research in Social Science

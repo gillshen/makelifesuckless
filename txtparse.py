@@ -106,8 +106,8 @@ def parse(src: str) -> CV:
     curren_data_object = None
     current_section = ""
 
-    for line in src.splitlines():
-        if not line.strip():
+    for line in map(_preprocess, src.splitlines()):
+        if not line:
             continue
 
         if name := _match(NAME, line):
@@ -176,6 +176,20 @@ def parse(src: str) -> CV:
             print(f"unparseable line: {line!r}")
 
     return cv
+
+
+def _preprocess(line: str):
+    # protect % sign (latex comments not allowed as a result)
+    line = line.replace("%", "\\%")
+
+    # remove excessive whitespace
+    line = re.sub(r"\s+", " ", line).strip()
+
+    # correct quotes
+    line = re.sub(r'(^|\s)"', r"\1``", line)
+    line = re.sub(r"(^|\s)'", r"\1`", line)
+
+    return line
 
 
 def _match(compiled_pattern: re.Pattern, text: str):
