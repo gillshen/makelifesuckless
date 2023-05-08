@@ -1,6 +1,7 @@
-\documentclass[<< settings.font_size_in_point >>pt]{article}
+\documentclass[<< settings.paper >>, << settings.font_size_in_point >>pt]{article}
 
 \usepackage{xkeyval}
+\usepackage{etoolbox}  % provides string testing
 \usepackage{microtype}
 \usepackage{enumitem}
 \usepackage{fontspec}
@@ -13,14 +14,26 @@
 
 \raggedbottom
 
-\setmainfont{<< settings.main_font >>}<! if settings.old_style_numbers !>[Numbers={OldStyle, Proportional}]<! endif !>
-\titleformat{\section}[hang]{\bfseries\large}{}{0pt}{}
+<! set var_proportional = 'Proportional' if settings.proportional_numbers else 'Monospaced' -!>
+<! set var_oldstyle = 'OldStyle' if settings.old_style_numbers else 'Lining' -!>
+\setmainfont{<< settings.main_font >>}[Numbers={<< var_proportional >>, << var_oldstyle >>}]
+\titleformat{\section}[hang]{}{}{0pt}{}
 \urlstyle{<< settings.url_style >>}
+
+\newcommand{\headingstyle}[1]{%
+    \setmainfont{<< settings.heading_font >>}[%
+        LetterSpace=<! if settings.all_cap_headings !>6.0<! else !>2.0<! endif !>,
+        Numbers={<< var_proportional >>, << var_oldstyle >>}
+    ]%
+    \<< settings.heading_relative_size >>
+    <!- if settings.bold_headings !>\bfseries<! endif !>
+    <!- if settings.all_cap_headings !>\uppercase{#1}<! else !>#1<! endif !>
+}
 
 \newlength{\remaining}
 \newcommand{\sectionstyle}[1]{%
-    \setlength{\remaining}{\textwidth-\widthof{\addfontfeature{LetterSpace=6.0}\large\uppercase{#1}}}%
-    \underline{\addfontfeature{LetterSpace=6.0}\uppercase{#1}\hspace{\remaining}}%
+    \setlength{\remaining}{\textwidth - \widthof{\headingstyle{#1}}}%
+    \underline{\headingstyle{#1}\hspace{\remaining}}%
 }
 
 \let\oldsection\section
@@ -57,9 +70,10 @@
     \begingroup
     \setkeys{activitykeys}{org=, startdate=, enddate=, hoursperweek=, weeksperyear=, #1}%
     \textbf{\activity@role\ifx\activity@org\empty\else{, \activity@org}\fi}\par
-    \activity@startdate\,--\,\activity@enddate
+    \expandafter\ifstrempty\expandafter{\activity@startdate}{\activity@enddate}{\activity@startdate\,--\,\activity@enddate}
     \hfill
-    \activity@hoursperweek\ hours/week, \activity@weeksperyear\ weeks/year\par
+    \activity@hoursperweek\ \expandafter\ifstrequal\expandafter{\activity@hoursperweek}{1}{hour}{hours}/week,
+    \activity@weeksperyear\ \expandafter\ifstrequal\expandafter{\activity@weeksperyear}{1}{week}{weeks}/year\par
     \endgroup
     \begin{itemize}[nosep]
 }{%
@@ -71,7 +85,8 @@
 
 <! if cv.name -!>
 \begin{center}
-	\LARGE\bfseries
+    \setmainfont{<< settings.title_font >>}[Numbers={<< var_proportional >>, << var_oldstyle >>}]%
+	\<< settings.title_relative_size >>\bfseries%
 	<< cv.name >>
 \end{center}
 \addvspace{\medskipamount}

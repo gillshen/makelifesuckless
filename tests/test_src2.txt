@@ -1,0 +1,34 @@
+name: Ding Tianyi
+phone: +86 16601910988
+Email: stanleyding1083@icloud.com
+
+school: World Foreign Language Academy, Shanghai
+start date: 2021-09
+end date: 2024-06
+courses: English B HL, Mathematics HL, Physics HL, Chinese A SL, Economics SL, German AB SL
+
+role: Conrad Challenge
+hours per week: 5-6
+weeks per year: 12 weeks
+•	Conducted group research on the issue of oil leakage in oceans.
+•	Managed the finance sector and part of the technology sector. Calculated the cost of and helped build the prototype of a surface oil cleaning device using a programmable module.
+•	Received a Gold award.
+
+role: Participant
+org: Physics Bowl
+hours per week: 4-6
+weeks per year: 10
+•	Completed 12 training classes in mechanics, electromagnetism, thermodynamics, optics, atomic physics, and other high school physics modules.
+•	Achieved a Gold Award in the formal contest after taking a mock test.
+
+
+role: Researcher
+org: Project in Applied Fluid Mechanics
+hours per week: 8
+weeks per year: 4
+•	Studied fluid mechanics with Professor Roberto Zenit of Brown University.
+•	Led a team of three in conducting a paper plane experiment to research aerodynamic features of different types of planes, and wrote a 1000-word experiment report
+•	As the main contributor, co-authored a 3500-word paper on the experiment and the findings.
+
+
+

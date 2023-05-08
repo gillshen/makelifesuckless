@@ -8,7 +8,7 @@ class DateError(ValueError):
 
 
 def _compile(keyword):
-    return re.compile(rf"^\s*{keyword}\s*:(.*)$", flags=re.IGNORECASE)
+    return re.compile(rf"^\s*{keyword}\s*[:：](.*)$", flags=re.IGNORECASE)
 
 
 NAME = _compile("name")
@@ -31,7 +31,7 @@ ROLE = _compile("role")
 ORG = _compile("org")
 HOURS = _compile(r"hours\s+per\s+week")
 WEEKS = _compile(r"weeks\s+per\s+year")
-DESCRIPTION = re.compile(r"^\s*-\s*(.+)$")
+DESCRIPTION = re.compile(r"^\s*[-•]\s*(.+)$")
 SECTION = re.compile(r"^\s*#\s*(.+)$")
 
 AWARD = _compile("award")

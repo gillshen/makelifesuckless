@@ -4,19 +4,18 @@ phone: +86 1234567890
 address: Changshu, Jiangsu
 website: www.fakeurl.com
 
-school: UWC Changshu
+    school:    UWC Changshu
 start date: 2021-09-01
 end date: 2024-06-30
 courses: AP Calculus BC, AP Microeconomics, AP Macroeconomics
 gpa: 3.87
 degree: High School Diploma
 
-Award: UKMT Mathematics Competition Global Gold
-Award date: 2022
-
 Test: TOEFL
 Score: 106
 test date: 2023-01
+
+# Community
 
 Role: Member, President
 Org: Table Tennis Club
@@ -25,8 +24,8 @@ End date: present
 Hours per week: 2
 Weeks per year: 40
 -	Increased club membership by 100%, from 15 to 30.
--	Initiated and organized a community event, which brought professional players to share their stories, demonstrate technical skills, and engage in small table tennis games with around 25 participants.
--	Hosted a visit by Paralympic champions where they interacted and played table tennis with over 20 students.
+•	Initiated and organized a community event, which brought professional players to share their stories, demonstrate technical skills, and engage in small table tennis games with around 25 participants.
+•	Hosted a visit by Paralympic champions where they interacted and played table tennis with over 20 students.
 -	Organized friendly matches with Kunshan Duke University and Changshu Institute of Technology.
 -	Successfully lobbied the School Olympics Committee to introduce table tennis as an event in the School Olympics.
 
@@ -81,6 +80,8 @@ Hours per week: 2
 Weeks per year: 40
 -	Initiated and led the study group (4-5 members) to assist classmates in challenging subjects.
 
+# Academic
+
 Role: Student and Researcher
 Org: Cathaypath Institute of Science
 Start date: 2022-05
@@ -90,6 +91,7 @@ Weeks per year: 10
 -	Studied price dispersion and search cost in China’s online stores in collaboration with a teammate under the guidance of Professor Alexei Parakhonyak of the University of Oxford.
 -	Co-authored a 10-page paper, "A Measurement of Price Dispersion and Search Cost in China's Online Stores," forthcoming in Applied Economics and Policy Studies or Advances in Economics Management and Political Sciences.
 -	Obtained grade B+.
+
 
 Role: Independent Research in Social Science
 Start date: 2023-01

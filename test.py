@@ -2,7 +2,7 @@ from txtparse import parse
 from render import render, Settings
 from shell import run_lualatex
 
-TXT_PATH = "tests/test_src.txt"
+TXT_PATH = "tests/test_src1.txt"
 TEX_PATH = "tests/test_output.tex"
 TEMPLATE_PATH = "templates/classic.tex"
 
@@ -27,16 +27,14 @@ def test_parse():
 
 
 def test_render():
-    args = {
-        "name": "Alice",
-        "activities": ["hiking", "rowing", "digging graves"],
-        "awards": ["silliest walker", "best mole"],
-    }
-    print(render("tests/test_template.tex", **args))
-
-
-def test_parse_and_render():
-    settings = Settings(main_font="EB Garamond", secondary_font="EB Garamond")
+    settings = Settings(
+        main_font="EB Garamond",
+        heading_font="Open Sans",
+        title_font="EB Garamond",
+        old_style_numbers=True,
+        bold_headings=False,
+        color_links=True,
+    )
     with open(TXT_PATH, encoding="utf-8") as f:
         cv = parse(f.read())
     with open(TEX_PATH, "w", encoding="utf-8") as f:
@@ -46,5 +44,4 @@ def test_parse_and_render():
 
 if __name__ == "__main__":
     # test_parse()
-    # test_render()
-    test_parse_and_render()
+    test_render()
