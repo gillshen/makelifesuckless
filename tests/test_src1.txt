@@ -15,7 +15,7 @@ Test: TOEFL
 Score: 106
 test date: 2023-01
 
-# Community
+
 
 Role: Member, President
 Org: Table Tennis Club
@@ -80,7 +80,7 @@ Hours per week: 2
 Weeks per year: 40
 -	Initiated and led the study group (4-5 members) to assist classmates in challenging subjects.
 
-# Academic
+
 
 Role: Student and Researcher
 Org: Cathaypath Institute of Science

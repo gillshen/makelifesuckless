@@ -16,23 +16,36 @@ ENVIRONMENT = jinja2.Environment(
 
 @dataclasses.dataclass
 class Settings:
+    # global font options
     main_font: str
     heading_font: str
     title_font: str
     proportional_numbers: bool = True
     old_style_numbers: bool = False
-    paper: str = "a4paper"
     font_size_in_point: int = 11
     heading_relative_size: str = "large"
     title_relative_size: str = "LARGE"
-    bold_headings: bool = True
-    all_cap_headings: bool = True
+
+    # paper size and margins
+    paper: str = "a4paper"
     top_margin_in_inch: int = 0.8
     bottom_margin_in_inch: int = 1
     left_margin_in_inch: int = 1
     right_margin_in_inch: int = 1
+
+    # heading appearance
+    bold_headings: bool = True
+    all_cap_headings: bool = True
+    default_activities_section_title: str = "Activities"
+    awards_section_title: str = "Awards"
+    skills_section_title: str = "Skills"
+
+    # url appearance
+    url_font_follows_text: bool = True
     color_links: bool = False
-    url_style: str = "rm"
+    url_color: str = "black"
+
+    # date formatting
     date_style: str = "american"
 
 

@@ -7,7 +7,7 @@
 \usepackage{fontspec}
 \usepackage{titlesec}
 \usepackage{calc} % for calculating remaining length
-\usepackage[colorlinks=<! if settings.color_links !>true<! else !>false<! endif !>]{hyperref}
+\usepackage[colorlinks=<< 'true' if settings.color_links else 'false' >>, urlcolor=<< settings.url_color >>]{hyperref}
 
 \usepackage[skip=.1\baselineskip plus 0pt]{parskip}
 \usepackage[top=<< settings.top_margin_in_inch >>in, bottom=<< settings.bottom_margin_in_inch >>in, left=<< settings.left_margin_in_inch >>in, right=<< settings.right_margin_in_inch >>in]{geometry}
@@ -18,11 +18,11 @@
 <! set var_oldstyle = 'OldStyle' if settings.old_style_numbers else 'Lining' -!>
 \setmainfont{<< settings.main_font >>}[Numbers={<< var_proportional >>, << var_oldstyle >>}]
 \titleformat{\section}[hang]{}{}{0pt}{}
-\urlstyle{<< settings.url_style >>}
+<! if settings.url_font_follows_text !>\urlstyle{rm}<! endif !>
 
 \newcommand{\headingstyle}[1]{%
     \setmainfont{<< settings.heading_font >>}[%
-        LetterSpace=<! if settings.all_cap_headings !>6.0<! else !>2.0<! endif !>,
+        LetterSpace=<< '6.0' if settings.all_cap_headings else '2.0' >>,
         Numbers={<< var_proportional >>, << var_oldstyle >>}
     ]%
     \<< settings.heading_relative_size >>
@@ -101,7 +101,7 @@
 <!- endif !>
 
 <! if cv.education or cv.tests -!>
-\section{<! if cv.education !>Education<! else !>Tests<! endif !>}
+\section{<< 'Education' if cv.education else 'Tests' >>}
 <! for edu in cv.education !>
 \edu{<< edu.school >>}{%
     startdate={<< edu.start_date.to_str(style=settings.date_style, mask=edu.end_date) >>},
@@ -112,21 +112,21 @@
     gpa={<< edu.gpa >>},
     courses={<< edu.courses >>}
 }
-<!- endfor -!>
+<!- endfor !>
 <! for test in cv.tests !>
 \textbf{<< test.name >>}: << test.score >><! if test.date !> (<< test.date.to_str(style=settings.date_style) >>)<! endif !>
 <! endfor !>
 <!- endif !>
 
 <! if cv.awards -!>
-\section{Awards}
+\section{<< settings.awards_section_title >>}
 <! for award in cv.awards !>
 \textbf{<< award.name >>}, << award.date.to_str(style=settings.date_style) >>
 <! endfor !>
 <!- endif !>
 
 <! if cv.skillsets -!>
-\section{Skills}
+\section{<< settings.skills_section_title >>}
 <! for skillset in cv.skillsets !>
 <! if skillset.name !>\textbf{<< skillset.name >>}: <! endif !><< skillset.skills >>
 <! endfor !>
@@ -134,7 +134,7 @@
 
 <! set sections = cv.activity_sections or [""] -!>
 <! for section in sections !>
-\section{<! if section == "" !>Activities<! else !><< section >><! endif !>}
+\section{<< section or settings.default_activities_section_title >>}
 
 <! for activity in cv.activities_of_section(section) !>
 \begin{activity}{%

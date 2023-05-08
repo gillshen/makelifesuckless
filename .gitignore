@@ -170,3 +170,5 @@ cython_debug/
 *.synctex.gz
 *.pdf
 tests/test_output.tex
+
+.vscode
