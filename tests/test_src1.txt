@@ -23,10 +23,10 @@ Start date: 2021-09-01
 End date: present
 Hours per week: 2
 Weeks per year: 40
--	Increased club membership by 100%, from 15 to 30.
+-	Increased club membership by **100%**, from 15 to 30.
 •	Initiated and organized a community event, which brought professional players to share their stories, demonstrate technical skills, and engage in small table tennis games with around 25 participants.
 •	Hosted a visit by Paralympic champions where they interacted and played table tennis with over 20 students.
--	Organized friendly matches with Kunshan Duke University and Changshu Institute of Technology.
+-	Organized friendly matches with ***Kunshan* Duke University** and ***Changshu** Institute of Technology*.
 -	Successfully lobbied the School Olympics Committee to introduce table tennis as an event in the School Olympics.
 
 Role: Organizer
