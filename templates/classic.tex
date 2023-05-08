@@ -21,6 +21,9 @@
     \underline{\addfontfeature{LetterSpace=6.0}\uppercase{#1}\hspace{\remaining}}%
 }
 
+\let\oldsection\section
+\renewcommand{\section}[1]{\oldsection[#1]{\sectionstyle{#1}}}
+
 \makeatletter
 \define@key{edukeys}{startdate}{\def\edu@startdate{#1}}
 \define@key{edukeys}{enddate}{\def\edu@enddate{#1}}
@@ -38,7 +41,7 @@
     \ifx\edu@gpa\empty\else{GPA: \edu@gpa\par}\fi
     \ifx\edu@major\empty\else{Major: \edu@major\ifx\edu@minor\empty\else{ | Minor: \edu@minor}\fi\par}\fi
     \ifx\edu@courses\empty\else{Courses: \edu@courses\par}\fi
-    \endgroup
+    \endgroup\par\addvspace{\medskipamount}
 }
 
 \define@key{activitykeys}{role}{\def\activity@role{#1}}
@@ -79,9 +82,8 @@
 \end{center}
 <!- endif !>
 
-<! if cv.education -!>
-\section[Education]{\sectionstyle{Education}}
-
+<! if cv.education or cv.tests -!>
+\section{<! if cv.education !>Education<! else !>Tests<! endif !>}
 <! for edu in cv.education !>
 \edu{<< edu.school >>}{%
     startdate={<< edu.start_date >>},
@@ -93,15 +95,29 @@
     courses={<< edu.courses >>}
 }
 <!- endfor -!>
+<! for test in cv.tests !>
+\textbf{<< test.name >>}: << test.score >><! if test.date !> (<< test.date >>)<! endif !>
+<! endfor !>
+<!- endif !>
+
+<! if cv.awards -!>
+\section{Awards}
+<! for award in cv.awards !>
+\textbf{<< award.name >>}, << award.date >>
+<! endfor !>
+<!- endif !>
+
+<! if cv.skillsets -!>
+\section{Skills}
+<! for skillset in cv.skillsets !>
+<! if skillset.name !>\textbf{<< skillset.name >>}: <! endif !><< skillset.skills >>
+<! endfor !>
 <!- endif !>
 
 <!- set sections = cv.activity_sections or [""] -!>
 <! for section in sections !>
-<! if section == "" !>
-\section[Activities]{\sectionstyle{Activities}}
-<! else !>
-\section[<< section >>]{\sectionstyle{<< section >>}}
-<! endif !>
+\section{<! if section == "" !>Activities<! else !><< section >><! endif !>}
+
 <! for activity in cv.activities_of_section(section) !>
 \begin{activity}{%
     role={<< activity.role >>},

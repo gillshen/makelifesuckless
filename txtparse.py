@@ -32,6 +32,10 @@ SECTION = re.compile(r"^\s*#\s*(.+)$")
 AWARD = _compile("award")
 AWARD_DATE = _compile(r"award\s+date")
 
+TEST = _compile("test")
+SCORE = _compile("score")
+TEST_DATE = _compile(r"test\s+date")
+
 SKILLSET_NAME = _compile(r"skillset\s+name")
 SKILLS = _compile("skills")
 
@@ -67,6 +71,13 @@ class Award:
 
 
 @dataclasses.dataclass
+class Test:
+    name: str
+    score: str = ""
+    date: str = ""
+
+
+@dataclasses.dataclass
 class SkillSet:
     name: str
     skills: str = ""
@@ -83,6 +94,7 @@ class CV:
     activity_sections: list[str] = dataclasses.field(default_factory=list)
     activities: list[Activity] = dataclasses.field(default_factory=list)
     awards: list[Award] = dataclasses.field(default_factory=list)
+    tests: list[Test] = dataclasses.field(default_factory=list)
     skillsets: list[SkillSet] = dataclasses.field(default_factory=list)
 
     def activities_of_section(self, section: str = ""):
@@ -118,12 +130,15 @@ def parse(src: str) -> CV:
         elif role := _match(ROLE, line):
             curren_data_object = Activity(role=role, section=current_section)
             cv.activities.append(curren_data_object)
-        elif skillset_name := _match(SKILLSET_NAME, line):
+        elif (skillset_name := _match(SKILLSET_NAME, line)) is not None:
             curren_data_object = SkillSet(name=skillset_name)
             cv.skillsets.append(curren_data_object)
         elif award_name := _match(AWARD, line):
             curren_data_object = Award(name=award_name)
             cv.awards.append(curren_data_object)
+        elif test_name := _match(TEST, line):
+            curren_data_object = Test(name=test_name)
+            cv.tests.append(curren_data_object)
 
         elif start_date := _match(START_DATE, line):
             curren_data_object.start_date = start_date
@@ -150,8 +165,10 @@ def parse(src: str) -> CV:
         elif description := _match(DESCRIPTION, line):
             curren_data_object.descriptions.append(description)
 
-        elif award_date := _match(AWARD_DATE, line):
-            curren_data_object.date = award_date
+        elif x_date := _match(AWARD_DATE, line) or _match(TEST_DATE, line):
+            curren_data_object.date = x_date
+        elif score := _match(SCORE, line):
+            curren_data_object.score = score
         elif skills := _match(SKILLS, line):
             curren_data_object.skills = skills
 

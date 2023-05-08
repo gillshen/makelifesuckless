@@ -16,11 +16,12 @@ Award date: 2022
 
 Test: TOEFL
 Score: 106
+test date: 2023-01
 
 Role: Member, President
 Org: Table Tennis Club
 Start date: 2021-09
-End date: ongoing
+End date: present
 Hours per week: 2
 Weeks per year: 40
 -	Doubled the club membership from 15 to 30.
@@ -114,3 +115,10 @@ End date: 2022-05
 Hours per week: 1
 Weeks per year: 40
 -	Studied online micro-credit loans and identified features of financial services that are most desirable for low-income groups, summarizing findings in a 14-page paper.
+
+
+skillset name: Programming Skills
+skills: Python, \LaTeX, SQL
+
+skillset name: 
+skills: Soccer, Table Tennis
