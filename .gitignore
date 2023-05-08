@@ -166,6 +166,7 @@ cython_debug/
 # tex
 *.log
 *.aux
+*.out
 *.synctex.gz
 *.pdf
 tests/test_output.tex

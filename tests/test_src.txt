@@ -45,7 +45,7 @@ End date: 2022-05
 Hours per week: 2
 Weeks per year: 40
 -	Co-organized fun activities such as Trivia Night, which offered math-related games and puzzles, and LaTeX Workshop, each drawing around 20 participants.
--	Conducted interviews with senior students regarding their experiences working on IB Internal Assessment and synthesized findings into an 87-page guidebook for junior students, offering practical guidance on topic selection and available resources.
+-	Conducted interviews with senior students regarding their experiences working on [IB Internal Assessment](https://www.ibo.org/programmes/diploma-programme/assessment-and-exams/) and synthesized findings into an 87-page guidebook for junior students, offering practical guidance on topic selection and available resources.
 -	Volunteered to tutor 20 students in a local school for children of migrant workers, teaching them mathematics and guiding them to develop their own projects.
 
 Role: Member

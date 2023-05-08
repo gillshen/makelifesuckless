@@ -13,3 +13,4 @@ def run_lualatex(src_path, dest_path="", open_when_done=True):
     # clean up
     os.remove(f"{base_name}.aux")
     os.remove(f"{base_name}.log")
+    os.remove(f"{base_name}.out")

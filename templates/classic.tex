@@ -6,6 +6,7 @@
 \usepackage{fontspec}
 \usepackage{titlesec}
 \usepackage{calc} % for calculating remaining length
+\usepackage[colorlinks=<! if settings.color_links !>true<! else !>false<! endif !>]{hyperref}
 
 \usepackage[skip=.1\baselineskip plus 0pt]{parskip}
 \usepackage[top=<< settings.top_margin_in_inch >>in, bottom=<< settings.bottom_margin_in_inch >>in, left=<< settings.left_margin_in_inch >>in, right=<< settings.right_margin_in_inch >>in]{geometry}
@@ -14,6 +15,7 @@
 
 \setmainfont{<< settings.main_font >>}<! if settings.old_style_numbers !>[Numbers={OldStyle, Proportional}]<! endif !>
 \titleformat{\section}[hang]{\bfseries\large}{}{0pt}{}
+\urlstyle{<< settings.url_style >>}
 
 \newlength{\remaining}
 \newcommand{\sectionstyle}[1]{%
@@ -76,7 +78,8 @@
 <!- endif !>
 
 <! if cv.email or cv.phone or cv.address or cv.website -!>
-<! set bio = ' | '.join([cv.email, cv.phone, cv.address, cv.website]) -!>
+<! set website = '\\url{' + cv.website + '}' if cv.website else '' !>
+<! set bio = ' | '.join([cv.email, cv.phone, cv.address, website]) -!>
 \begin{center}
     << bio|replace('  |', '')|trim('| ') >>
 \end{center}

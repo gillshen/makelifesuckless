@@ -189,6 +189,9 @@ def _preprocess(line: str):
     line = re.sub(r'(^|\s)"', r"\1``", line)
     line = re.sub(r"(^|\s)'", r"\1`", line)
 
+    # url
+    line = re.sub(r"\[(.+?)\]\((.+?)\)", r"\\href{\2}{\1}", line)
+
     return line
 
 

@@ -24,6 +24,8 @@ class Settings:
     bottom_margin_in_inch: int = 1
     left_margin_in_inch: int = 1
     right_margin_in_inch: int = 1
+    color_links: bool = False
+    url_style: str = "rm"
 
 
 def render(template_filename, **args):
