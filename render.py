@@ -20,11 +20,11 @@ class Settings:
     main_font: str
     heading_font: str
     title_font: str
-    proportional_numbers: bool = True
-    old_style_numbers: bool = False
     font_size_in_point: int = 11
     heading_relative_size: str = "large"
     title_relative_size: str = "LARGE"
+    proportional_numbers: bool = True
+    old_style_numbers: bool = False
 
     # paper size and margins
     paper: str = "a4paper"
@@ -40,13 +40,13 @@ class Settings:
     awards_section_title: str = "Awards"
     skills_section_title: str = "Skills"
 
+    # date formatting
+    date_style: str = "american"
+
     # url appearance
     url_font_follows_text: bool = True
     color_links: bool = False
     url_color: str = "black"
-
-    # date formatting
-    date_style: str = "american"
 
 
 def render(template_filename, **args):

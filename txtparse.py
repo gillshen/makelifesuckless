@@ -140,6 +140,8 @@ class FlexDate:
 
         elif style == "iso":
             format_str = "%Y-%m-%d" if self.day else "%Y-%m"
+        elif style == "yyyy/mm/dd":
+            format_str = "%Y/%m/%d" if self.day else "%Y/%m"
         else:
             raise ValueError(f"unrecognized style: {style}")
 
