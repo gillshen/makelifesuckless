@@ -11,7 +11,12 @@
 \usepackage[colorlinks=<< 'true' if settings.color_links else 'false' >>, urlcolor=<< settings.url_color >>]{hyperref}
 
 \usepackage[skip=.1\baselineskip plus 0pt]{parskip}
-\usepackage[top=<< settings.top_margin_in_inch >>in, bottom=<< settings.bottom_margin_in_inch >>in, left=<< settings.left_margin_in_inch >>in, right=<< settings.right_margin_in_inch >>in]{geometry}
+\usepackage[%
+    top=<< settings.top_margin_in_inch >>in,
+    bottom=<< settings.bottom_margin_in_inch >>in,
+    left=<< settings.left_margin_in_inch >>in,
+    right=<< settings.right_margin_in_inch >>in
+]{geometry}
 
 \raggedbottom
 
@@ -45,6 +50,7 @@
 \renewcommand{\section}[1]{\oldsection[#1]{\sectionstyle{#1}}}
 
 \makeatletter
+\define@key{edukeys}{loc}{\def\edu@loc{#1}}
 \define@key{edukeys}{startdate}{\def\edu@startdate{#1}}
 \define@key{edukeys}{enddate}{\def\edu@enddate{#1}}
 \define@key{edukeys}{degree}{\def\edu@degree{#1}}
@@ -55,8 +61,8 @@
 
 \newcommand{\edu}[2]{%
     \begingroup
-    \setkeys{edukeys}{startdate=, enddate=, degree=, major=, minor=, gpa=, courses=, #2}%
-    \textbf{\ifx\edu@degree\empty\else{\edu@degree, }\fi#1}\par
+    \setkeys{edukeys}{loc=, startdate=, enddate=, degree=, major=, minor=, gpa=, courses=, #2}%
+    \textbf{\ifx\edu@degree\empty\else{\edu@degree, }\fi#1}\hfill\edu@loc\par
     \ifx\edu@startdate\empty\edu@enddate\else{\edu@startdate\,--\,\edu@enddate}\fi\par
     \ifx\edu@gpa\empty\else{GPA: \edu@gpa\par}\fi
     \ifx\edu@major\empty\else{Major: \edu@major\ifx\edu@minor\empty\else{ | Minor: \edu@minor}\fi\par}\fi
@@ -66,6 +72,7 @@
 
 \define@key{activitykeys}{role}{\def\activity@role{#1}}
 \define@key{activitykeys}{org}{\def\activity@org{#1}}
+\define@key{activitykeys}{loc}{\def\activity@loc{#1}}
 \define@key{activitykeys}{startdate}{\def\activity@startdate{#1}}
 \define@key{activitykeys}{enddate}{\def\activity@enddate{#1}}
 \define@key{activitykeys}{hoursperweek}{\def\activity@hoursperweek{#1}}
@@ -73,13 +80,16 @@
 
 \newenvironment{activity}[1]{%
     \begingroup
-    \setkeys{activitykeys}{org=, startdate=, enddate=, hoursperweek=, weeksperyear=, #1}%
-    \textbf{\activity@role\ifx\activity@org\empty\else{, \activity@org}\fi}\par
+    \setkeys{activitykeys}{org=, loc=, startdate=, enddate=, hoursperweek=, weeksperyear=, #1}%
+    \textbf{\activity@role\ifx\activity@org\empty\else{, \activity@org}\fi}\hfill\activity@loc\par
     \expandafter\ifstrempty\expandafter{\activity@startdate}{\activity@enddate}{\activity@startdate\,--\,\activity@enddate}
     \hfill
-    \expandafter\ifstrempty\expandafter{\activity@hoursperweek}{}{\activity@hoursperweek\ \expandafter\ifstrequal\expandafter{\activity@hoursperweek}{1}{hour}{hours}/week}%
-    \expandafter\ifstrempty\expandafter{\activity@hoursperweek}{}{\expandafter\ifstrempty\expandafter{\activity@weeksperyear}{}{,}}
-    \expandafter\ifstrempty\expandafter{\activity@weeksperyear}{}{\activity@weeksperyear\ \expandafter\ifstrequal\expandafter{\activity@weeksperyear}{1}{week}{weeks}/year}%
+    \expandafter\ifstrempty\expandafter{\activity@hoursperweek}{}{%
+        \activity@hoursperweek\ \expandafter\ifstrequal\expandafter{\activity@hoursperweek}{1}{hour}{hours}/week}%
+    \expandafter\ifstrempty\expandafter{\activity@hoursperweek}{}{%
+        \expandafter\ifstrempty\expandafter{\activity@weeksperyear}{}{,}}
+    \expandafter\ifstrempty\expandafter{\activity@weeksperyear}{}{%
+        \activity@weeksperyear\ \expandafter\ifstrequal\expandafter{\activity@weeksperyear}{1}{week}{weeks}/year}%
     \par
     \endgroup
     \begin{itemize}[nosep]
@@ -113,6 +123,7 @@
 \section{<< 'Education' if cv.education else 'Tests' >>}
 <! for edu in cv.education !>
 \edu{<< edu.school >>}{%
+    loc={<< edu.loc >>},
     startdate={<< edu.start_date.to_str(style=settings.date_style, mask=edu.end_date) >>},
     enddate={<< edu.end_date.to_str(style=settings.date_style) >>},
     degree={<< edu.degree >>},
@@ -149,6 +160,7 @@
 \begin{activity}{%
     role={<< activity.role >>},
     org={<< activity.org >>},
+    loc={<< activity.loc >>},
     startdate={<< activity.start_date.to_str(style=settings.date_style, mask=activity.end_date) >>},
     enddate={<< activity.end_date.to_str(style=settings.date_style) >>},
     hoursperweek={<< activity.hours_per_week >>},

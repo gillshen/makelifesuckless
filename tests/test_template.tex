@@ -1,7 +1,0 @@
-\documentclass{article}
-
-\begin{document}
-<< name >><! if activities!> loves <! for activity in activities !><< activity >>, <! endfor !>among other things.<! else !> does not enjoy doing anything.<! endif !>
-
-<! if awards !><< name >> has won the following awards: <! for award in awards !><< award >><! if loop.last !>.<! elif loop.length > 2 and loop.revindex == 2 !>, and <! elif loop.length == 2 and loop.revindex == 2 !> and <! else !>, <! endif !><! endfor !><! endif !>
-\end{document}

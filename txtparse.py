@@ -17,6 +17,8 @@ PHONE = _compile("phone")
 ADDRESS = _compile("address")
 WEBSITE = _compile("website")
 
+SECTION = re.compile(r"^\s*#\s*(.+)$")
+LOC = _compile("loc")
 START_DATE = _compile(r"start\s+date")
 END_DATE = _compile(r"end\s+date")
 
@@ -32,7 +34,6 @@ ORG = _compile("org")
 HOURS = _compile(r"hours\s+per\s+week")
 WEEKS = _compile(r"weeks\s+per\s+year")
 DESCRIPTION = re.compile(r"^\s*[-•]\s*(.+)$")
-SECTION = re.compile(r"^\s*#\s*(.+)$")
 
 AWARD = _compile("award")
 AWARD_DATE = _compile(r"award\s+date")
@@ -46,7 +47,7 @@ SKILLS = _compile("skills")
 
 
 @dataclasses.dataclass
-class FlexDate:
+class SmartDate:
     year: int = None
     month: int = None
     day: int = None
@@ -85,8 +86,8 @@ class FlexDate:
         else:
             return cls(year=year, month=month, day=day)
 
-    def to_str(self, *, style: str = "american", mask: "FlexDate" = None):
-        mask_date = mask or FlexDate()
+    def to_str(self, *, style: str = "american", mask: "SmartDate" = None):
+        mask_date = mask or SmartDate()
 
         if self.year is None and self.fallback != mask_date.fallback:
             return self.fallback
@@ -152,8 +153,9 @@ class FlexDate:
 @dataclasses.dataclass
 class Education:
     school: str
-    start_date: FlexDate = FlexDate()
-    end_date: FlexDate = FlexDate()
+    loc: str = ""
+    start_date: SmartDate = SmartDate()
+    end_date: SmartDate = SmartDate()
     degree: str = ""
     major: str = ""
     minor: str = ""
@@ -165,8 +167,9 @@ class Education:
 class Activity:
     role: str
     org: str = ""
-    start_date: FlexDate = FlexDate()
-    end_date: FlexDate = FlexDate()
+    loc: str = ""
+    start_date: SmartDate = SmartDate()
+    end_date: SmartDate = SmartDate()
     hours_per_week: str = ""
     weeks_per_year: str = ""
     descriptions: list[str] = dataclasses.field(default_factory=list)
@@ -176,14 +179,14 @@ class Activity:
 @dataclasses.dataclass
 class Award:
     name: str
-    date: FlexDate = FlexDate()
+    date: SmartDate = SmartDate()
 
 
 @dataclasses.dataclass
 class Test:
     name: str
     score: str = ""
-    date: FlexDate = FlexDate()
+    date: SmartDate = SmartDate()
 
 
 @dataclasses.dataclass
@@ -250,12 +253,14 @@ def parse(src: str) -> CV:
                 curren_data_object = Test(name=test_name)
                 cv.tests.append(curren_data_object)
 
+            elif loc := _match(LOC, line):
+                curren_data_object.loc = loc
             elif start_date := _match(START_DATE, line):
-                curren_data_object.start_date = FlexDate.from_str(start_date)
+                curren_data_object.start_date = SmartDate.from_str(start_date)
             elif end_date := _match(END_DATE, line):
-                curren_data_object.end_date = FlexDate.from_str(end_date)
+                curren_data_object.end_date = SmartDate.from_str(end_date)
             elif x_date := _match(AWARD_DATE, line) or _match(TEST_DATE, line):
-                curren_data_object.date = FlexDate.from_str(x_date)
+                curren_data_object.date = SmartDate.from_str(x_date)
 
             elif degree := _match(DEGREE, line):
                 curren_data_object.degree = degree

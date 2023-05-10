@@ -24,7 +24,7 @@ from PyQt6.QtWidgets import (
 )
 
 from render import Settings
-from txtparse import FlexDate
+from txtparse import SmartDate
 
 
 class MainWindow(QMainWindow):
@@ -395,7 +395,7 @@ class LatexColorSelector(QComboBox):
 
 
 class DateFormatSelector(QComboBox):
-    _sample_date = FlexDate(year=2022, month=11, day=1)
+    _sample_date = SmartDate(year=2022, month=11, day=1)
     _sample_to_style = {}
     for style in [
         "american",

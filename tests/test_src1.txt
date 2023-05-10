@@ -4,12 +4,13 @@ phone: +86 1234567890
 address: Changshu, Jiangsu
 website: www.fakeurl.com
 
-    school:    UWC Changshu
+school: UWC Changshu
 start date: 2021-09-01
 end date: 2024-06-30
 courses: AP Calculus BC, AP Microeconomics, AP Macroeconomics
 gpa: 3.87
 degree: High School Diploma
+loc: Changshu, Jiangsu
 
 Test: TOEFL
 Score: 106
@@ -19,6 +20,7 @@ test date: 2023-01
 
 Role: Member, President
 Org: Table Tennis Club
+loc: Changshu, Jiangsu
 Start date: 2021-09-01
 End date: present
 Hours per week: 2
@@ -43,7 +45,7 @@ End date: 2022-05
 Hours per week: 2
 Weeks per year: 40
 -	Co-organized fun activities such as Trivia Night, which offered math-related games and puzzles, and LaTeX Workshop, each drawing around 20 participants.
--	Conducted interviews with senior students regarding their experiences working on [IB Internal Assessment](https://www.ibo.org/programmes/diploma-programme/assessment-and-exams/) and synthesized findings into an 87-page guidebook for junior students, offering practical guidance on topic selection and available resources.
+-	Conducted interviews with senior students regarding their experiences working on [IB IA [Internal Assessment]](https://www.ibo.org/programmes/diploma-programme/assessment-and-exams/) and synthesized findings into an 87-page guidebook for junior students, offering practical guidance on topic selection and available resources.
 -	Volunteered to tutor 20 students in a local school for children of migrant workers, teaching them mathematics and guiding them to develop their own projects.
 
 Role: Member
@@ -84,6 +86,7 @@ Weeks per year: 40
 
 Role: Student and Researcher
 Org: Cathaypath Institute of Science
+loc: Online
 Start date: 2022-05
 End date: 2022-08
 Hours per week: 3

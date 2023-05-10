@@ -2,7 +2,7 @@ from txtparse import parse
 from render import render, Settings
 from shell import run_lualatex
 
-TXT_PATH = "tests/test_src3.txt"
+TXT_PATH = "tests/test_src1.txt"
 TEX_PATH = "tests/test_output.tex"
 TEMPLATE_PATH = "templates/classic.tex"
 
@@ -28,12 +28,13 @@ def test_parse():
 
 def test_render():
     settings = Settings(
-        main_font="EB Garamond",
+        main_font="Crimson Pro",
         heading_font="Open Sans",
-        title_font="EB Garamond",
+        title_font="Crimson Pro",
         old_style_numbers=True,
         bold_headings=False,
         color_links=True,
+        url_color="blue",
     )
     with open(TXT_PATH, encoding="utf-8") as f:
         cv = parse(f.read())
