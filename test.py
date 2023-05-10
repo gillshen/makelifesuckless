@@ -2,7 +2,7 @@ from txtparse import parse
 from render import render, Settings
 from shell import run_lualatex
 
-TXT_PATH = "tests/test_src1.txt"
+TXT_PATH = "tests/test_src3.txt"
 TEX_PATH = "tests/test_output.tex"
 TEMPLATE_PATH = "templates/classic.tex"
 

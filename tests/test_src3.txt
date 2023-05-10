@@ -1,0 +1,63 @@
+name: Zhang Tongwei
+email:
+address:
+
+school: American Heritage School [which campus?]
+
+role: Composer
+start date: G11
+end date: present
+hours per week: x
+weeks per year:
+- Composed and recorded 6 songs [describe them]. Free streaming available via [NetEase Cloud Music](https://music.163.com/#/artist?id=53159847).
+
+role: Performer?
+end date: G11
+hours per week:
+weeks per year: y
+- [Hiphop performance. Describe the details: what you performed, with whom, for what kind of audience, on what occasion.]
+
+role: Head of the Writing Department
+org: Social Media Club
+start date: G9
+end date: G11
+hours per week: x
+weeks per year: y
+- Responsible for managing the schools' official WeChat account, publishing stories on campus and other information related to the school.
+
+role: Video Creator and Actor
+end date: G10
+hours per week:
+weeks per year:
+- Created and acted in a 5-minute video with [what theme]. Won the second prize in the MineCommunity Short Video Contest.
+
+role: Volunteer
+org: Love Without Borders Program
+end date: G10
+hours per week:
+weeks per year:
+- Assisted with fundraising and online support [what exactly?] in an effort to donate [how many?] bicyles to [whom?]. Received local media coverage.
+
+role: Volunteer
+end date: G10
+hours per week:
+weeks per year:
+- Led a group of four students at school, raised funds for and bought 500 N95 masks, 2,400 surgical masks, and 50 medical goggles, and donated these supplies to [whom?].
+
+role: Volunteer
+org: China-Japan Friendship Hospital
+start date: G8
+end date: G9
+hours per week:
+weeks per year:
+- Trained fellow volunteers and assisted out-patients in using self-service kiosks. [scheduling - what is this]
+
+role: Volunteer
+org: Tibet Volunteer Program
+end date: G9
+hours per week:
+weeks per year:
+- [Describe the nature of the project]. Responsible for collecting donations and sourcing materials [what materials?].
+
+
+

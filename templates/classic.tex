@@ -77,8 +77,10 @@
     \textbf{\activity@role\ifx\activity@org\empty\else{, \activity@org}\fi}\par
     \expandafter\ifstrempty\expandafter{\activity@startdate}{\activity@enddate}{\activity@startdate\,--\,\activity@enddate}
     \hfill
-    \activity@hoursperweek\ \expandafter\ifstrequal\expandafter{\activity@hoursperweek}{1}{hour}{hours}/week,
-    \activity@weeksperyear\ \expandafter\ifstrequal\expandafter{\activity@weeksperyear}{1}{week}{weeks}/year\par
+    \expandafter\ifstrempty\expandafter{\activity@hoursperweek}{}{\activity@hoursperweek\ \expandafter\ifstrequal\expandafter{\activity@hoursperweek}{1}{hour}{hours}/week}%
+    \expandafter\ifstrempty\expandafter{\activity@hoursperweek}{}{\expandafter\ifstrempty\expandafter{\activity@weeksperyear}{}{,}}
+    \expandafter\ifstrempty\expandafter{\activity@weeksperyear}{}{\activity@weeksperyear\ \expandafter\ifstrequal\expandafter{\activity@weeksperyear}{1}{week}{weeks}/year}%
+    \par
     \endgroup
     \begin{itemize}[nosep]
 }{%
@@ -153,7 +155,7 @@
     weeksperyear={<< activity.weeks_per_year >>}
 }
 <! for descr in activity.descriptions -!>
-    \item << descr >>
+    \item\relax << descr >>
 <! endfor -!>
 \end{activity}
 <! endfor !>
