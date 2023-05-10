@@ -7,6 +7,7 @@
 \usepackage{fontspec}
 \usepackage{titlesec}
 \usepackage{calc} % for calculating remaining length
+\usepackage{xcolor}
 \usepackage[colorlinks=<< 'true' if settings.color_links else 'false' >>, urlcolor=<< settings.url_color >>]{hyperref}
 
 \usepackage[skip=.1\baselineskip plus 0pt]{parskip}
@@ -16,15 +17,19 @@
 
 <! set var_proportional = 'Proportional' if settings.proportional_numbers else 'Monospaced' -!>
 <! set var_oldstyle = 'OldStyle' if settings.old_style_numbers else 'Lining' -!>
+<!- if settings.main_font !>
 \setmainfont{<< settings.main_font >>}[Numbers={<< var_proportional >>, << var_oldstyle >>}]
+<! endif !>
 \titleformat{\section}[hang]{}{}{0pt}{}
 <! if settings.url_font_follows_text !>\urlstyle{rm}<! endif !>
 
 \newcommand{\headingstyle}[1]{%
+<!- if settings.heading_font !>
     \setmainfont{<< settings.heading_font >>}[%
         LetterSpace=<< '6.0' if settings.all_cap_headings else '2.0' >>,
         Numbers={<< var_proportional >>, << var_oldstyle >>}
     ]%
+<!- endif !>
     \<< settings.heading_relative_size >>
     <!- if settings.bold_headings !>\bfseries<! endif !>
     <!- if settings.all_cap_headings !>\uppercase{#1}<! else !>#1<! endif !>
@@ -85,7 +90,9 @@
 
 <! if cv.name -!>
 \begin{center}
+<!- if settings.title_font !>
     \setmainfont{<< settings.title_font >>}[Numbers={<< var_proportional >>, << var_oldstyle >>}]%
+<!- endif !>
 	\<< settings.title_relative_size >>\bfseries%
 	<< cv.name >>
 \end{center}

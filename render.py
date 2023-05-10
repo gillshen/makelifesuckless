@@ -17,9 +17,9 @@ ENVIRONMENT = jinja2.Environment(
 @dataclasses.dataclass
 class Settings:
     # global font options
-    main_font: str
-    heading_font: str
-    title_font: str
+    main_font: str = ""
+    heading_font: str = ""
+    title_font: str = ""
     font_size_in_point: int = 11
     heading_relative_size: str = "large"
     title_relative_size: str = "LARGE"

@@ -1,5 +1,4 @@
 import sys
-import typing
 
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QAction, QFont
@@ -22,7 +21,6 @@ from PyQt6.QtWidgets import (
     QDoubleSpinBox,
     QCheckBox,
     QLineEdit,
-    QWidget,
 )
 
 from render import Settings
@@ -134,24 +132,24 @@ class SettingsFrame(QFrame):
 
         # text font
         layout.addWidget(SettingsHeading("Text Font"))
-        self.text_typeface_selector = QFontComboBox(self)
-        layout.addWidget(self.text_typeface_selector)
+        self.text_font_selector = QFontComboBox(self)
+        layout.addWidget(self.text_font_selector)
         self.text_size_selector = QSpinBox(self, minimum=8, maximum=14, suffix=" pt")
         layout.addWidget(self.text_size_selector)
         layout.addSpacing(space_after_group)
 
         # heading font
         layout.addWidget(SettingsHeading("Heading Font"))
-        self.heading_typeface_selector = QFontComboBox(self)
-        layout.addWidget(self.heading_typeface_selector)
+        self.heading_font_selector = QFontComboBox(self)
+        layout.addWidget(self.heading_font_selector)
         self.heading_size_selector = LatexFontSizeSelector(self)
         layout.addWidget(self.heading_size_selector)
         layout.addSpacing(space_after_group)
 
         # title font
         layout.addWidget(SettingsHeading("Title Font"))
-        self.title_typeface_selector = QFontComboBox(self)
-        layout.addWidget(self.title_typeface_selector)
+        self.title_font_selector = QFontComboBox(self)
+        layout.addWidget(self.title_font_selector)
         self.title_size_selector = LatexFontSizeSelector(self)
         layout.addWidget(self.title_size_selector)
         layout.addSpacing(space_after_group)
@@ -196,7 +194,7 @@ class SettingsFrame(QFrame):
         layout.addSpacing(space_after_separator)
 
         # headings
-        layout.addWidget(SettingsHeading("Heading Appearance"))
+        layout.addWidget(SettingsHeading("Section Title Style"))
         self.bold_headings_check = QCheckBox("Bold", self)
         layout.addWidget(self.bold_headings_check)
         self.all_cap_headings_check = QCheckBox("All Caps", self)
@@ -253,20 +251,22 @@ class SettingsFrame(QFrame):
         self.color_links_check.stateChanged.connect(_update_url_color_selector)
 
     def get_settings(self) -> Settings:
-        s = Settings(
-            main_font=self.text_typeface_selector.currentText(),
-            heading_font=self.heading_typeface_selector.currentText(),
-            title_font=self.title_typeface_selector.currentText(),
-        )
+        s = Settings()
 
+        s.main_font = self.text_font_selector.currentText()
         s.font_size_in_point = self.text_size_selector.value()
+
+        s.heading_font = self.heading_font_selector.currentText()
         s.heading_relative_size = self.heading_size_selector.get_command()
+
+        s.title_font = self.title_font_selector.currentText()
         s.title_relative_size = self.title_size_selector.get_command()
 
         s.proportional_numbers = self.proportional_numbers_check.isChecked()
         s.old_style_numbers = self.oldstyle_numbers_check.isChecked()
 
         s.paper = self.paper_selector.get_paper()
+
         s.top_margin_in_inch = self.margin_selectors["top"].value()
         s.bottom_margin_in_inch = self.margin_selectors["bottom"].value()
         s.left_margin_in_inch = self.margin_selectors["left"].value()
@@ -288,13 +288,13 @@ class SettingsFrame(QFrame):
         return s
 
     def load_settings(self, s: Settings):
-        self.text_typeface_selector.setCurrentFont(QFont(s.main_font))
+        self.text_font_selector.setCurrentFont(QFont(s.main_font))
         self.text_size_selector.setValue(s.font_size_in_point)
 
-        self.heading_typeface_selector.setCurrentFont(QFont(s.heading_font))
+        self.heading_font_selector.setCurrentFont(QFont(s.heading_font))
         self.heading_size_selector.set_from_command(s.heading_relative_size)
 
-        self.title_typeface_selector.setCurrentFont(QFont(s.title_font))
+        self.title_font_selector.setCurrentFont(QFont(s.title_font))
         self.title_size_selector.set_from_command(s.title_relative_size)
 
         self.proportional_numbers_check.setChecked(s.proportional_numbers)
@@ -334,29 +334,25 @@ class LatexPaperSelector(QComboBox):
         self.addItems(sorted(self._text_to_paper))
 
     def get_paper(self):
-        text = self.currentText()
-        return self._text_to_paper[text]
+        return self._text_to_paper[self.currentText()]
 
     def set_from_paper(self, paper: str):
-        text = self._paper_to_text[paper]
-        self.setCurrentText(text)
+        self.setCurrentText(self._paper_to_text[paper])
 
 
 class LatexFontSizeSelector(QSpinBox):
-    _sizes = ["normalsize", "large", "Large", "LARGE", "huge", "Huge"]
-    _size_to_command = dict(enumerate(_sizes, start=1))
-    _command_to_size = {v: k for k, v in _size_to_command.items()}
+    _commands = ["normalsize", "large", "Large", "LARGE", "huge", "Huge"]
+    _value_to_command = dict(enumerate(_commands, start=1))
+    _command_to_value = {v: k for k, v in _value_to_command.items()}
 
     def __init__(self, parent=None):
-        super().__init__(parent, minimum=1, maximum=len(self._sizes), prefix="Size ")
+        super().__init__(parent, minimum=1, maximum=len(self._commands), prefix="Size ")
 
     def get_command(self):
-        display_value = super().value()
-        return self._size_to_command[display_value]
+        return self._value_to_command[super().value()]
 
     def set_from_command(self, command: str):
-        display_value = self._command_to_size[command]
-        self.setValue(display_value)
+        self.setValue(self._command_to_value[command])
 
 
 class LatexColorSelector(QComboBox):
@@ -392,12 +388,10 @@ class LatexColorSelector(QComboBox):
         self.addItems(sorted(self._texts))
 
     def get_color(self):
-        text = self.currentText()
-        return self._text_to_color[text]
+        return self._text_to_color[self.currentText()]
 
     def set_from_color(self, color: str):
-        text = self._color_to_text[color]
-        self.setCurrentText(text)
+        self.setCurrentText(self._color_to_text[color])
 
 
 class DateFormatSelector(QComboBox):
@@ -424,12 +418,10 @@ class DateFormatSelector(QComboBox):
         self.addItems(sorted(self._sample_to_style))
 
     def get_style(self):
-        current_sample = self.currentText()
-        return self._sample_to_style[current_sample]
+        return self._sample_to_style[self.currentText()]
 
     def set_from_style(self, style: str):
-        sample = self._sample_date.to_str(style=style)
-        self.setCurrentText(sample)
+        self.setCurrentText(self._sample_date.to_str(style=style))
 
 
 class Separator(QFrame):
@@ -442,11 +434,6 @@ class Separator(QFrame):
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = MainWindow()
-    test_settings = Settings(
-        main_font="EB Garamond",
-        heading_font="Calibri",
-        title_font="Impact",
-        url_color="lightgray",
-    )
+    test_settings = Settings()
     window.settings_frame.load_settings(test_settings)
     sys.exit(app.exec())
