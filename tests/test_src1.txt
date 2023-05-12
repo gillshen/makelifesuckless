@@ -16,6 +16,9 @@ Test: TOEFL
 Score: 106
 test date: 2023-01
 
+test: SAT
+score: 1500
+test date: target
 
 
 Role: Member, President

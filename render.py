@@ -1,6 +1,8 @@
 import dataclasses
 import jinja2
 
+from txtparse import CV
+
 ENVIRONMENT = jinja2.Environment(
     block_start_string="<!",
     block_end_string="!>",
@@ -26,12 +28,15 @@ class Settings:
     proportional_numbers: bool = True
     old_style_numbers: bool = False
 
-    # paper size and margins
+    # paper size and spacing
     paper: str = "a4paper"
-    top_margin_in_inch: int = 0.8
-    bottom_margin_in_inch: int = 1
-    left_margin_in_inch: int = 1
-    right_margin_in_inch: int = 1
+    top_margin_in_inch: float = 0.8
+    bottom_margin_in_inch: float = 1.0
+    left_margin_in_inch: float = 1.0
+    right_margin_in_inch: float = 1.0
+    line_spread: float = 1.0
+    paragraph_skip_in_pt: int = 0
+    entry_skip_in_pt: int = 6
 
     # heading appearance
     bold_headings: bool = True
@@ -49,8 +54,8 @@ class Settings:
     url_color: str = "black"
 
 
-def render(template_filename, **args):
-    with open(template_filename, encoding="utf-8") as template_file:
+def render(*, template_path: str, cv: CV, settings: Settings):
+    with open(template_path, encoding="utf-8") as template_file:
         template_str = template_file.read()
     template = ENVIRONMENT.from_string(template_str)
-    return template.render(**args)
+    return template.render(cv=cv, settings=settings)

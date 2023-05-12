@@ -10,7 +10,7 @@
 \usepackage{xcolor}
 \usepackage[colorlinks=<< 'true' if settings.color_links else 'false' >>, urlcolor=<< settings.url_color >>]{hyperref}
 
-\usepackage[skip=.1\baselineskip plus 0pt]{parskip}
+\usepackage[skip=<< settings.paragraph_skip_in_pt >>pt plus 0pt]{parskip}
 \usepackage[%
     top=<< settings.top_margin_in_inch >>in,
     bottom=<< settings.bottom_margin_in_inch >>in,
@@ -18,6 +18,7 @@
     right=<< settings.right_margin_in_inch >>in
 ]{geometry}
 
+\linespread{<< settings.line_spread >>}
 \raggedbottom
 
 <! set var_proportional = 'Proportional' if settings.proportional_numbers else 'Monospaced' -!>
@@ -49,6 +50,9 @@
 \let\oldsection\section
 \renewcommand{\section}[1]{\oldsection[#1]{\sectionstyle{#1}}}
 
+\newlength{\postentryskip}
+\setlength{\postentryskip}{<< settings.entry_skip_in_pt >>pt plus 1pt minus 1pt}
+
 \makeatletter
 \define@key{edukeys}{loc}{\def\edu@loc{#1}}
 \define@key{edukeys}{startdate}{\def\edu@startdate{#1}}
@@ -67,7 +71,7 @@
     \ifx\edu@gpa\empty\else{GPA: \edu@gpa\par}\fi
     \ifx\edu@major\empty\else{Major: \edu@major\ifx\edu@minor\empty\else{ | Minor: \edu@minor}\fi\par}\fi
     \ifx\edu@courses\empty\else{Courses: \edu@courses\par}\fi
-    \endgroup\par\addvspace{\medskipamount}
+    \endgroup\par\addvspace{\postentryskip}
 }
 
 \define@key{activitykeys}{role}{\def\activity@role{#1}}
@@ -94,7 +98,7 @@
     \endgroup
     \begin{itemize}[nosep]
 }{%
-    \end{itemize}\par\addvspace{\medskipamount}
+    \end{itemize}\par\addvspace{\postentryskip}
 }
 \makeatother
 
@@ -108,7 +112,7 @@
 	\<< settings.title_relative_size >>\bfseries%
 	<< cv.name >>
 \end{center}
-\addvspace{\medskipamount}
+\addvspace{\postentryskip}
 <!- endif !>
 
 <! if cv.email or cv.phone or cv.address or cv.website -!>

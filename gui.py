@@ -190,6 +190,22 @@ class SettingsFrame(QFrame):
             margins_grid_layout.addWidget(w, row, 1)
         layout.addSpacing(space_after_group)
 
+        layout.addWidget(SettingsHeading("Line Height"))
+        self.line_spread_selector = QDoubleSpinBox(self)
+        self.line_spread_selector.setSingleStep(0.1)
+        layout.addWidget(self.line_spread_selector)
+        layout.addSpacing(space_after_group)
+
+        layout.addWidget(SettingsHeading("Space Between Paragraphs"))
+        self.paragraph_skip_selector = QSpinBox(self, suffix=" pt")
+        layout.addWidget(self.paragraph_skip_selector)
+        layout.addSpacing(space_within_group)
+
+        layout.addWidget(SettingsHeading("Space Between Entries"))
+        self.entry_skip_selector = QSpinBox(self, suffix=" pt")
+        layout.addWidget(self.entry_skip_selector)
+        layout.addSpacing(space_after_group)
+
         layout.addWidget(Separator(self))
         layout.addSpacing(space_after_separator)
 
@@ -272,6 +288,10 @@ class SettingsFrame(QFrame):
         s.left_margin_in_inch = self.margin_selectors["left"].value()
         s.right_margin_in_inch = self.margin_selectors["right"].value()
 
+        s.line_spread = self.line_spread_selector.value()
+        s.paragraph_skip_in_pt = self.paragraph_skip_selector.value()
+        s.entry_skip_in_pt = self.entry_skip_selector.value()
+
         s.bold_headings = self.bold_headings_check.isChecked()
         s.all_cap_headings = self.all_cap_headings_check.isChecked()
 
@@ -306,6 +326,10 @@ class SettingsFrame(QFrame):
         self.margin_selectors["bottom"].setValue(s.bottom_margin_in_inch)
         self.margin_selectors["left"].setValue(s.left_margin_in_inch)
         self.margin_selectors["right"].setValue(s.right_margin_in_inch)
+
+        self.line_spread_selector.setValue(s.line_spread)
+        self.paragraph_skip_selector.setValue(s.paragraph_skip_in_pt)
+        self.entry_skip_selector.setValue(s.entry_skip_in_pt)
 
         self.bold_headings_check.setChecked(s.bold_headings)
         self.all_cap_headings_check.setChecked(s.all_cap_headings)
