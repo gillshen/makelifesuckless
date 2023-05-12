@@ -1,7 +1,7 @@
 import sys
 
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QAction, QFont
+from PyQt6.QtGui import QAction, QKeySequence, QFont
 from PyQt6.QtWidgets import (
     QApplication,
     QMainWindow,
@@ -31,42 +31,7 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
 
-        menubar = self.menuBar()
-
-        # File menu
-        file_menu = QMenu("File", self)
-        new_action = QAction("New", self)
-        file_menu.addAction(new_action)
-        open_action = QAction("Open", self)
-        file_menu.addAction(open_action)
-        save_action = QAction("Save", self)
-        file_menu.addAction(save_action)
-        save_as_action = QAction("Save as", self)
-        file_menu.addAction(save_as_action)
-        quit_action = QAction("Quit", self)
-        quit_action.triggered.connect(self.close)
-        file_menu.addAction(quit_action)
-        menubar.addMenu(file_menu)
-
-        # Edit menu
-        edit_menu = QMenu("Edit", self)
-        undo_action = QAction("Undo", self)
-        edit_menu.addAction(undo_action)
-        redo_action = QAction("Redo", self)
-        edit_menu.addAction(redo_action)
-        copy_action = QAction("Copy", self)
-        edit_menu.addAction(copy_action)
-        paste_action = QAction("Paste", self)
-        edit_menu.addAction(paste_action)
-        menubar.addMenu(edit_menu)
-
-        # View menu
-        view_menu = QMenu("View", self)
-        options_action = QAction("Show/Hide Options", self)
-        view_menu.addAction(options_action)
-        log_action = QAction("Show/Hide Console", self)
-        view_menu.addAction(log_action)
-        menubar.addMenu(view_menu)
+        self.menubar = self.menuBar()
 
         # Main widget
         central_widget = QSplitter(self)
@@ -109,6 +74,9 @@ class MainWindow(QMainWindow):
         control_panel_layout.addWidget(run_button)
         run_button.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum)
 
+        # Create menu actions
+        self._create_menu()
+
         # Set window properties
         self.setGeometry(200, 100, 1000, 600)
         central_widget.setSizes([640, 360])
@@ -116,8 +84,153 @@ class MainWindow(QMainWindow):
         self.setWindowTitle(" ")
         self.show()
 
+    def _create_menu(self):
+        # File menu
+        file_menu = QMenu("&File", self)
+
+        new_action = QAction("&New", self)
+        new_action.triggered.connect(self.new_file)
+        new_action.setShortcut(QKeySequence("Ctrl+n"))
+        file_menu.addAction(new_action)
+
+        open_action = QAction("&Open...", self)
+        open_action.triggered.connect(self.open_file)
+        open_action.setShortcut(QKeySequence("Ctrl+o"))
+        file_menu.addAction(open_action)
+
+        file_menu.addSeparator()
+
+        save_action = QAction("&Save", self)
+        save_action.triggered.connect(self.save_file)
+        save_action.setShortcut(QKeySequence("Ctrl+s"))
+        file_menu.addAction(save_action)
+
+        save_as_action = QAction("Save &As...", self)
+        save_as_action.triggered.connect(self.save_file_as)
+        save_as_action.setShortcut(QKeySequence("Ctrl+Shift+s"))
+        file_menu.addAction(save_as_action)
+
+        file_menu.addSeparator()
+
+        quit_action = QAction("&Quit", self)
+        quit_action.triggered.connect(self.close)
+        quit_action.setShortcut(QKeySequence("Ctrl+q"))
+        file_menu.addAction(quit_action)
+
+        self.menubar.addMenu(file_menu)
+
+        # Edit menu
+        edit_menu = QMenu("&Edit", self)
+
+        undo_action = QAction("&Undo", self)
+        undo_action.triggered.connect(self.editor.undo)
+        undo_action.setShortcut("Ctrl+z")
+        edit_menu.addAction(undo_action)
+
+        redo_action = QAction("&Redo", self)
+        redo_action.triggered.connect(self.editor.redo)
+        redo_action.setShortcut("Ctrl+Shift+z")
+        edit_menu.addAction(redo_action)
+
+        edit_menu.addSeparator()
+
+        cut_action = QAction("Cu&t", self)
+        cut_action.triggered.connect(self.editor.cut)
+        cut_action.setShortcut("Ctrl+x")
+        edit_menu.addAction(cut_action)
+
+        copy_action = QAction("&Copy", self)
+        copy_action.triggered.connect(self.editor.copy)
+        copy_action.setShortcut("Ctrl+c")
+        edit_menu.addAction(copy_action)
+
+        paste_action = QAction("&Paste", self)
+        paste_action.triggered.connect(self.editor.paste)
+        paste_action.setShortcut("Ctrl+v")
+        edit_menu.addAction(paste_action)
+
+        edit_menu.addSeparator()
+
+        find_action = QAction("&Find", self)
+        find_action.triggered.connect(lambda: print("editor.find"))
+        find_action.setShortcut(QKeySequence("Ctrl+f"))
+        edit_menu.addAction(find_action)
+
+        replace_action = QAction("&Replace", self)
+        replace_action.triggered.connect(lambda: print("editor.replace"))
+        replace_action.setShortcut(QKeySequence("Ctrl+r"))
+        edit_menu.addAction(replace_action)
+
+        edit_menu.addSeparator()
+
+        toggle_wrap_action = QAction("Wrap Lines", self)
+        toggle_wrap_action.triggered.connect(self.toggle_wrap)
+        toggle_wrap_action.setShortcut(QKeySequence("Alt+z"))
+        toggle_wrap_action.setCheckable(True)
+        toggle_wrap_action.setChecked(True)
+        edit_menu.addAction(toggle_wrap_action)
+
+        preferences_action = QAction("&Preferences...", self)
+        preferences_action.triggered.connect(self.preferences)
+        preferences_action.setShortcut(QKeySequence("Ctrl+,"))
+        edit_menu.addAction(preferences_action)
+
+        self.menubar.addMenu(edit_menu)
+
+        # View menu
+        settings_menu = QMenu("La&TeX", self)
+
+        import_settings_action = QAction("&Import Settings...", self)
+        import_settings_action.triggered.connect(self.import_settings)
+        import_settings_action.setShortcut(QKeySequence("Ctrl+i"))
+        settings_menu.addAction(import_settings_action)
+
+        export_settings_action = QAction("&Export Settings...", self)
+        export_settings_action.triggered.connect(self.export_settings)
+        export_settings_action.setShortcut(QKeySequence("Ctrl+e"))
+        settings_menu.addAction(export_settings_action)
+
+        settings_menu.addSeparator()
+
+        restore_default_action = QAction("Restore &Default", self)
+        restore_default_action.triggered.connect(self.restore_default)
+        restore_default_action.setShortcut(QKeySequence("Ctrl+Shift+d"))
+        settings_menu.addAction(restore_default_action)
+
+        self.menubar.addMenu(settings_menu)
+
     def get_settings(self) -> Settings:
         return self.settings_frame.get_settings()
+
+    def new_file(self):
+        print("new file")
+
+    def open_file(self):
+        print("open file")
+
+    def save_file(self):
+        print("save file")
+
+    def save_file_as(self):
+        print("save file as")
+
+    def toggle_wrap(self, state):
+        if state:
+            print("do wrap lines")
+        else:
+            print("do not wrap lines")
+
+    def preferences(self):
+        print("open preferences dialog")
+
+    def import_settings(self):
+        print("import settings")
+
+    def export_settings(self):
+        print("export settings")
+
+    def restore_default(self):
+        print("restore default settings")
 
 
 class SettingsFrame(QFrame):
@@ -194,7 +307,7 @@ class SettingsFrame(QFrame):
         self.line_spread_selector = QDoubleSpinBox(self)
         self.line_spread_selector.setSingleStep(0.1)
         layout.addWidget(self.line_spread_selector)
-        layout.addSpacing(space_after_group)
+        layout.addSpacing(space_within_group)
 
         layout.addWidget(SettingsHeading("Space Between Paragraphs"))
         self.paragraph_skip_selector = QSpinBox(self, suffix=" pt")
