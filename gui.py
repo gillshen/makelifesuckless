@@ -1,7 +1,9 @@
 import sys
+import os
+import traceback
 
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QAction, QKeySequence, QFont
+from PyQt6.QtGui import QAction, QKeySequence, QFont, QCloseEvent
 from PyQt6.QtWidgets import (
     QApplication,
     QMainWindow,
@@ -21,16 +23,21 @@ from PyQt6.QtWidgets import (
     QDoubleSpinBox,
     QCheckBox,
     QLineEdit,
+    QFileDialog,
+    QMessageBox,
 )
 
 from render import Settings
 from txtparse import SmartDate
+
+APP_TITLE = "Curriculum Victim"
 
 
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
 
+        self._filepath = ""
         self.menubar = self.menuBar()
 
         # Main widget
@@ -44,6 +51,9 @@ class MainWindow(QMainWindow):
         # Editor
         self.editor = QPlainTextEdit(self)
         self.editor.setFrameShape(QFrame.Shape.NoFrame)
+        self.document = self.editor.document()
+        self.document.setDocumentMargin(6)
+        self.editor.textChanged.connect(self._on_editor_change)
         editor_panel.addWidget(self.editor)
 
         # Console
@@ -70,18 +80,23 @@ class MainWindow(QMainWindow):
         control_panel_layout.addSpacing(10)
 
         run_button = QPushButton("Run")
-        run_button.clicked.connect(lambda: print(self.get_settings()))
+        run_button.clicked.connect(self.run_latex)
         control_panel_layout.addWidget(run_button)
         run_button.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum)
 
         # Create menu actions
         self._create_menu()
 
+        # UI preferences
+        self.editor.setFont(QFont("Consolas", pointSize=12))  # TODO preferences
+        # TODO line wrap
+
         # Set window properties
-        self.setGeometry(200, 100, 1000, 600)
-        central_widget.setSizes([640, 360])
+        self.setGeometry(200, 100, 1000, 640)
+        central_widget.setSizes([680, 320])
         editor_panel.setSizes([450, 150])
-        self.setWindowTitle(" ")
+
+        self.new_file()
         self.show()
 
     def _create_menu(self):
@@ -129,7 +144,7 @@ class MainWindow(QMainWindow):
 
         redo_action = QAction("&Redo", self)
         redo_action.triggered.connect(self.editor.redo)
-        redo_action.setShortcut("Ctrl+Shift+z")
+        redo_action.setShortcut("Ctrl+y")
         edit_menu.addAction(redo_action)
 
         edit_menu.addSeparator()
@@ -152,12 +167,16 @@ class MainWindow(QMainWindow):
         edit_menu.addSeparator()
 
         find_action = QAction("&Find", self)
+        # TODO
         find_action.triggered.connect(lambda: print("editor.find"))
+        find_action.setDisabled(True)
         find_action.setShortcut(QKeySequence("Ctrl+f"))
         edit_menu.addAction(find_action)
 
         replace_action = QAction("&Replace", self)
+        # TODO
         replace_action.triggered.connect(lambda: print("editor.replace"))
+        replace_action.setDisabled(True)
         replace_action.setShortcut(QKeySequence("Ctrl+r"))
         edit_menu.addAction(replace_action)
 
@@ -171,7 +190,7 @@ class MainWindow(QMainWindow):
         edit_menu.addAction(toggle_wrap_action)
 
         preferences_action = QAction("&Preferences...", self)
-        preferences_action.triggered.connect(self.preferences)
+        preferences_action.triggered.connect(self.launch_pref_dialog)
         preferences_action.setShortcut(QKeySequence("Ctrl+,"))
         edit_menu.addAction(preferences_action)
 
@@ -199,37 +218,127 @@ class MainWindow(QMainWindow):
 
         self.menubar.addMenu(settings_menu)
 
+    def closeEvent(self, event: QCloseEvent):
+        # Ask user to handle unsaved change if any
+        if self.isWindowModified() and not _ask_yesno(
+            parent=self,
+            default_yes=False,
+            text=(
+                "Your document has unsaved changes.\n"
+                "Discard the changes and close the program?"
+            ),
+        ):
+            event.ignore()
+        else:
+            event.accept()
+
     def get_settings(self) -> Settings:
         return self.settings_frame.get_settings()
 
+    def handle_exc(self, e: Exception):
+        self.log(traceback.format_exc())
+        _show_error(parent=self, text=f"Oops, something went wrong.\n{e}")
+
+    def log(self, message: str):
+        self.console.setPlainText(message)
+
+    def run_latex(self):
+        # TODO
+        from pprint import pformat
+        from dataclasses import asdict
+
+        self.log(pformat(asdict(self.get_settings())))
+
+    def update_filepath(self):
+        if self._filepath:
+            filename = os.path.basename(self._filepath)
+        else:
+            filename = "<untitled>"
+        self.setWindowTitle(f"{filename}[*] - {APP_TITLE}")
+        self.setWindowFilePath(self._filepath)
+
+    def _on_editor_change(self):
+        self.setWindowModified(self.document.isModified())
+
     def new_file(self):
-        print("new file")
+        self.editor.setPlainText("")
+        self._filepath = ""
+        self.update_filepath()
 
     def open_file(self):
-        print("open file")
+        filepath, _ = QFileDialog.getOpenFileName(
+            self, caption="Open File", directory="", filter="TXT Files (*.txt)"
+        )
+        if not filepath:
+            return
+        try:
+            with open(filepath, encoding="utf-8") as f:
+                text = f.read()
+        except Exception as e:
+            self.handle_exc(e)
+        else:
+            self.editor.setPlainText(text)
+            self.setWindowModified(False)
+            self._filepath = filepath
+            self.update_filepath()
+
+    def _save_file(self, filepath: str):
+        with open(filepath, "w", encoding="utf-8") as f:
+            f.write(self.editor.toPlainText())
+        self.setWindowModified(False)
 
     def save_file(self):
-        print("save file")
+        if not self._filepath:
+            self.save_file_as()
+            return
+        try:
+            self._save_file(self._filepath)
+        except Exception as e:
+            self.handle_exc(e)
 
     def save_file_as(self):
-        print("save file as")
+        filepath, _ = QFileDialog.getSaveFileName(
+            self, caption="Save File", directory="", filter="TXT Files (*.txt)"
+        )
+        if not filepath:
+            return
+        try:
+            self._save_file(filepath=filepath)
+        except Exception as e:
+            self.handle_exc(e)
+        else:
+            self._filepath = filepath
+            self.update_filepath()
 
     def toggle_wrap(self, state):
         if state:
-            print("do wrap lines")
+            wrap_mode = QPlainTextEdit.LineWrapMode.WidgetWidth
         else:
-            print("do not wrap lines")
+            wrap_mode = QPlainTextEdit.LineWrapMode.NoWrap
+        self.editor.setLineWrapMode(wrap_mode)
 
-    def preferences(self):
+    def launch_pref_dialog(self):
+        # TODO
         print("open preferences dialog")
 
     def import_settings(self):
-        print("import settings")
+        filepath, _ = QFileDialog.getOpenFileName(
+            self,
+            caption="Import Settings",
+            directory="settings",
+            filter="JSON Files (*.json)",
+        )
+        if not filepath:
+            return
+        # TODO
+        print(filepath)
 
     def export_settings(self):
+        # TODO
         print("export settings")
 
     def restore_default(self):
+        # TODO
         print("restore default settings")
 
 
@@ -566,6 +675,29 @@ class Separator(QFrame):
         super().__init__(parent)
         self.setFrameShape(QFrame.Shape.HLine)
         self.setFrameShadow(QFrame.Shadow.Sunken)
+
+
+def _ask_yesno(
+    *,
+    parent=None,
+    text="",
+    title=APP_TITLE,
+    icon=QMessageBox.Icon.Question,
+    default_yes=True,
+):
+    msg_box = QMessageBox(parent=parent, text=text, icon=icon)
+    msg_box.setWindowTitle(title)
+    _ = QMessageBox.StandardButton
+    msg_box.setStandardButtons(_.Yes | _.No)
+    msg_box.setDefaultButton(_.Yes if default_yes else _.No)
+    return msg_box.exec() == _.Yes
+
+
+def _show_error(*, parent=None, text="", title=APP_TITLE):
+    msg_box = QMessageBox(parent=parent, text=text)
+    msg_box.setWindowTitle(title)
+    msg_box.setIcon(QMessageBox.Icon.Critical)
+    return msg_box.exec()
 
 
 if __name__ == "__main__":
