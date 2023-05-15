@@ -1,4 +1,6 @@
 {
+    "show_activity_locations": true,
+    "show_time_commitments": true,
     "main_font": "EB Garamond",
     "heading_font": "Open Sans",
     "title_font": "EB Garamond",
@@ -20,8 +22,11 @@
     "default_activities_section_title": "Activities",
     "awards_section_title": "Awards",
     "skills_section_title": "Skills",
+    "bullet_text": "\u2022",
+    "bullet_indent_in_em": 0.0,
+    "bullet_item_sep_in_em": 1.0,
     "date_style": "american",
     "url_font_follows_text": true,
-    "color_links": false,
+    "color_links": true,
     "url_color": "black"
 }

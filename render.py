@@ -20,6 +20,10 @@ ENVIRONMENT = jinja2.Environment(
 
 @dataclasses.dataclass
 class Settings:
+    # ug/grad-specific information
+    show_activity_locations: bool = True
+    show_time_commitments: bool = True
+
     # global font options
     main_font: str = ""
     heading_font: str = ""
@@ -46,6 +50,11 @@ class Settings:
     default_activities_section_title: str = "Activities"
     awards_section_title: str = "Awards"
     skills_section_title: str = "Skills"
+
+    # bullet appearance
+    bullet_text: str = "•"  # U+2022
+    bullet_indent_in_em: float = 0.0
+    bullet_item_sep_in_em: float = 1.0
 
     # date formatting
     date_style: str = "american"

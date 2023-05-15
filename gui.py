@@ -2,8 +2,14 @@ import sys
 import os
 import traceback
 
-from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QAction, QKeySequence, QFont, QCloseEvent
+from PyQt6.QtCore import Qt, QRegularExpression
+from PyQt6.QtGui import (
+    QAction,
+    QKeySequence,
+    QFont,
+    QCloseEvent,
+    QRegularExpressionValidator,
+)
 from PyQt6.QtWidgets import (
     QApplication,
     QMainWindow,
@@ -368,6 +374,16 @@ class SettingsFrame(QFrame):
         space_within_group = 5
         space_after_separator = 10
 
+        # ug/grad-specific settings
+        self.activity_location_check = QCheckBox("Show Activity Locations", self)
+        layout.addWidget(self.activity_location_check)
+        self.time_commitment_check = QCheckBox("Show Time Commitments", self)
+        layout.addWidget(self.time_commitment_check)
+        layout.addSpacing(space_after_group)
+
+        layout.addWidget(Separator(self))
+        layout.addSpacing(space_after_separator)
+
         # text font
         layout.addWidget(SettingsHeading("Text Font"))
         self.text_font_selector = QFontComboBox(self)
@@ -476,6 +492,32 @@ class SettingsFrame(QFrame):
         layout.addWidget(Separator(self))
         layout.addSpacing(space_after_separator)
 
+        # bullet appearance
+        layout.addWidget(SettingsHeading("Bullet Text"))
+        self.bullet_text_edit = QLineEdit(self)
+        valid = QRegularExpression(r"[^\\~%{}]*")
+        bullet_validator = QRegularExpressionValidator(valid, self.bullet_text_edit)
+        self.bullet_text_edit.setValidator(bullet_validator)
+        layout.addWidget(self.bullet_text_edit)
+        layout.addSpacing(space_within_group)
+
+        layout.addWidget(SettingsHeading("Bullet Indent"))
+        self.bullet_indent_selector = QDoubleSpinBox(self, suffix=" em")
+        self.bullet_indent_selector.setSingleStep(0.1)
+        self.bullet_indent_selector.setDecimals(1)
+        layout.addWidget(self.bullet_indent_selector)
+        layout.addSpacing(space_within_group)
+
+        layout.addWidget(SettingsHeading("Bullet-Item Separation"))
+        self.bullet_item_sep_selector = QDoubleSpinBox(self, suffix=" em")
+        self.bullet_item_sep_selector.setSingleStep(0.1)
+        self.bullet_item_sep_selector.setDecimals(1)
+        layout.addWidget(self.bullet_item_sep_selector)
+        layout.addSpacing(space_after_group)
+
+        layout.addWidget(Separator(self))
+        layout.addSpacing(space_after_separator)
+
         # date format
         layout.addWidget(SettingsHeading("Date Format"))
         self.date_style_selector = DateFormatSelector(self)
@@ -507,6 +549,9 @@ class SettingsFrame(QFrame):
     def get_settings(self) -> Settings:
         s = Settings()
 
+        s.show_activity_locations = self.activity_location_check.isChecked()
+        s.show_time_commitments = self.time_commitment_check.isChecked()
+
         s.main_font = self.text_font_selector.currentText()
         s.font_size_in_point = self.text_size_selector.value()
 
@@ -537,6 +582,10 @@ class SettingsFrame(QFrame):
         s.awards_section_title = self.awards_title_edit.text()
         s.skills_section_title = self.skills_title_edit.text()
 
+        s.bullet_text = self.bullet_text_edit.text()
+        s.bullet_indent_in_em = self.bullet_indent_selector.value()
+        s.bullet_item_sep_in_em = self.bullet_item_sep_selector.value()
+
         s.date_style = self.date_style_selector.get_style()
 
         s.url_font_follows_text = self.url_follows_text_check.isChecked()
@@ -546,6 +595,9 @@ class SettingsFrame(QFrame):
         return s
 
     def load_settings(self, s: Settings):
+        self.activity_location_check.setChecked(s.show_activity_locations)
+        self.time_commitment_check.setChecked(s.show_time_commitments)
+
         self.text_font_selector.setCurrentFont(QFont(s.main_font))
         self.text_size_selector.setValue(s.font_size_in_point)
 
@@ -575,6 +627,10 @@ class SettingsFrame(QFrame):
         self.default_activities_title_edit.setText(s.default_activities_section_title)
         self.awards_title_edit.setText(s.awards_section_title)
         self.skills_title_edit.setText(s.skills_section_title)
+
+        self.bullet_text_edit.setText(s.bullet_text)
+        self.bullet_indent_selector.setValue(s.bullet_indent_in_em)
+        self.bullet_item_sep_selector.setValue(s.bullet_item_sep_in_em)
 
         self.date_style_selector.set_from_style(s.date_style)
         self.url_follows_text_check.setChecked(s.url_font_follows_text)

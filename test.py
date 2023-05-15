@@ -27,15 +27,19 @@ def test_parse():
 
 
 TEST_SETTINGS = Settings(
+    show_activity_locations=True,
+    show_time_commitments=True,
     main_font="Crimson Pro",
     heading_font="Open Sans",
     title_font="Crimson Pro",
     old_style_numbers=True,
     line_spread=1.05,
-    paragraph_skip_in_pt=1,
+    paragraph_skip_in_pt=0,
     entry_skip_in_pt=6,
-    bold_headings=False,
-    date_style="american slash",
+    bold_headings=True,
+    bullet_text="\u2020",
+    bullet_item_sep_in_em=1.0,
+    date_style="american",
     color_links=True,
     url_color="blue",
 )
@@ -58,4 +62,4 @@ def test_render():
 if __name__ == "__main__":
     # test_parse()
     test_json_read_write()
-    # test_render()
+    test_render()

@@ -53,6 +53,14 @@
 \newlength{\postentryskip}
 \setlength{\postentryskip}{<< settings.entry_skip_in_pt >>pt plus 1pt minus 1pt}
 
+\setlist[itemize]{%
+    label={<< settings.bullet_text >>},
+    leftmargin=*,
+    align=left,
+    labelindent=<< settings.bullet_indent_in_em >>em,
+    labelsep=<< settings.bullet_item_sep_in_em >>em
+}
+
 \makeatletter
 \define@key{edukeys}{loc}{\def\edu@loc{#1}}
 \define@key{edukeys}{startdate}{\def\edu@startdate{#1}}
@@ -85,16 +93,17 @@
 \newenvironment{activity}[1]{%
     \begingroup
     \setkeys{activitykeys}{org=, loc=, startdate=, enddate=, hoursperweek=, weeksperyear=, #1}%
-    \textbf{\activity@role\ifx\activity@org\empty\else{, \activity@org}\fi}\hfill\activity@loc\par
-    \expandafter\ifstrempty\expandafter{\activity@startdate}{\activity@enddate}{\activity@startdate\,--\,\activity@enddate}
-    \hfill
+    \textbf{\activity@role\ifx\activity@org\empty\else{, \activity@org}\fi}%
+    <! if settings.show_activity_locations !>\hfill\activity@loc<! endif !>\par
+    \expandafter\ifstrempty\expandafter{\activity@startdate}{\activity@enddate}{\activity@startdate\,--\,\activity@enddate}%
+    <! if settings.show_time_commitments !>\hfill
     \expandafter\ifstrempty\expandafter{\activity@hoursperweek}{}{%
         \activity@hoursperweek\ \expandafter\ifstrequal\expandafter{\activity@hoursperweek}{1}{hour}{hours}/week}%
     \expandafter\ifstrempty\expandafter{\activity@hoursperweek}{}{%
         \expandafter\ifstrempty\expandafter{\activity@weeksperyear}{}{,}}
     \expandafter\ifstrempty\expandafter{\activity@weeksperyear}{}{%
         \activity@weeksperyear\ \expandafter\ifstrequal\expandafter{\activity@weeksperyear}{1}{week}{weeks}/year}%
-    \par
+    <! endif !>\par
     \endgroup
     \begin{itemize}[nosep]
 }{%
