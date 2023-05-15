@@ -33,8 +33,9 @@ from PyQt6.QtWidgets import (
     QMessageBox,
 )
 
-from render import Settings
-from txtparse import SmartDate
+from render import Settings, render
+from txtparse import SmartDate, parse
+from shell import run_lualatex
 
 APP_TITLE = "Curriculum Victim"
 LAST_USED_SETTINGS = "settings/last_used.json"
@@ -67,8 +68,9 @@ class MainWindow(QMainWindow):
         editor_panel.addWidget(self.editor)
 
         # Console
-        self.console = QPlainTextEdit(self)
+        self.console = Console(self)
         self.console.setFrameShape(QFrame.Shape.NoFrame)
+        self.console.setReadOnly(True)
         editor_panel.addWidget(self.console)
 
         # Right panel
@@ -195,7 +197,7 @@ class MainWindow(QMainWindow):
         edit_menu.addSeparator()
 
         toggle_wrap_action = QAction("Wrap Lines", self)
-        toggle_wrap_action.triggered.connect(self.toggle_wrap)
+        toggle_wrap_action.triggered.connect(self.toggle_editor_wrap)
         toggle_wrap_action.setShortcut(QKeySequence("Alt+z"))
         toggle_wrap_action.setCheckable(True)
         toggle_wrap_action.setChecked(True)
@@ -208,27 +210,34 @@ class MainWindow(QMainWindow):
 
         self.menubar.addMenu(edit_menu)
 
-        # View menu
-        settings_menu = QMenu("La&TeX", self)
+        # LaTeX menu
+        latex_menu = QMenu("La&TeX", self)
+
+        run_latex_action = QAction("&Run", self)
+        run_latex_action.triggered.connect(self.run_latex)
+        run_latex_action.setShortcut(QKeySequence("Ctrl+Shift+r"))
+        latex_menu.addAction(run_latex_action)
+
+        latex_menu.addSeparator()
 
         import_settings_action = QAction("&Import Settings...", self)
         import_settings_action.triggered.connect(self.import_settings)
         import_settings_action.setShortcut(QKeySequence("Ctrl+i"))
-        settings_menu.addAction(import_settings_action)
+        latex_menu.addAction(import_settings_action)
 
         export_settings_action = QAction("&Export Settings...", self)
         export_settings_action.triggered.connect(self.export_settings)
         export_settings_action.setShortcut(QKeySequence("Ctrl+e"))
-        settings_menu.addAction(export_settings_action)
+        latex_menu.addAction(export_settings_action)
 
-        settings_menu.addSeparator()
+        latex_menu.addSeparator()
 
         restore_default_action = QAction("Restore &Default", self)
         restore_default_action.triggered.connect(self.restore_default)
         restore_default_action.setShortcut(QKeySequence("Ctrl+Shift+d"))
-        settings_menu.addAction(restore_default_action)
+        latex_menu.addAction(restore_default_action)
 
-        self.menubar.addMenu(settings_menu)
+        self.menubar.addMenu(latex_menu)
 
     def _load_initial_settings(self):
         try:
@@ -259,14 +268,31 @@ class MainWindow(QMainWindow):
         _show_error(parent=self, text=f"Oops, something went wrong.\n{e}")
 
     def log(self, message: str):
-        self.console.setPlainText(message)
+        self.console.append(message)
 
     def run_latex(self):
-        # TODO
-        from pprint import pformat
-        from dataclasses import asdict
+        self.log("Working...\n")
+        try:
+            # TODO hard-coded paths
+            template_path = "templates/classic.tex"
+            tex_path = "tests/test_output.tex"
 
-        self.log(pformat(asdict(self.settings_frame.get_settings())))
+            cv = parse(self.editor.toPlainText())
+            settings = self.settings_frame.get_settings()
+            rendered = render(template_path=template_path, cv=cv, settings=settings)
+            with open(tex_path, "w", encoding="utf-8") as tex_file:
+                tex_file.write(rendered)
+
+            proc = run_lualatex(
+                tex_path,
+                dest_path="tests/test_output.pdf",
+                capture_output=True,
+                open_when_done=True,
+            )
+        except Exception as e:
+            self.handle_exc(e)
+        else:
+            self.log(proc.stdout.decode("ascii"))
 
     def update_filepath(self):
         if self._filepath:
@@ -329,7 +355,7 @@ class MainWindow(QMainWindow):
             self._filepath = filepath
             self.update_filepath()
 
-    def toggle_wrap(self, state):
+    def toggle_editor_wrap(self, state):
         if state:
             wrap_mode = QPlainTextEdit.LineWrapMode.WidgetWidth
         else:
@@ -788,6 +814,16 @@ class Separator(QFrame):
         super().__init__(parent)
         self.setFrameShape(QFrame.Shape.HLine)
         self.setFrameShadow(QFrame.Shadow.Sunken)
+
+
+class Console(QPlainTextEdit):
+    """Plain text widget that supports appending and auto-scrolling"""
+
+    def append(self, text: str):
+        self.setPlainText(f"{self.toPlainText()}{text}")
+        # scroll to bottom
+        vbar = self.verticalScrollBar()
+        vbar.setValue(vbar.maximum())
 
 
 def _ask_yesno(
