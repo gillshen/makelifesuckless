@@ -1,5 +1,5 @@
 from txtparse import parse
-from render import render, Settings
+from render import Settings, render
 from shell import run_lualatex
 
 TXT_PATH = "tests/test_src1.txt"
@@ -26,27 +26,36 @@ def test_parse():
         print(skillset)
 
 
+TEST_SETTINGS = Settings(
+    main_font="Crimson Pro",
+    heading_font="Open Sans",
+    title_font="Crimson Pro",
+    old_style_numbers=True,
+    line_spread=1.05,
+    paragraph_skip_in_pt=1,
+    entry_skip_in_pt=6,
+    bold_headings=False,
+    date_style="american slash",
+    color_links=True,
+    url_color="blue",
+)
+
+
+def test_json_read_write():
+    TEST_SETTINGS.to_json("tests/test_output.json", indent=2)
+    new_settings = Settings.from_json("tests/test_output.json")
+    assert new_settings == TEST_SETTINGS
+
+
 def test_render():
-    settings = Settings(
-        main_font="Crimson Pro",
-        heading_font="Open Sans",
-        title_font="Crimson Pro",
-        old_style_numbers=True,
-        line_spread=1.05,
-        paragraph_skip_in_pt=1,
-        entry_skip_in_pt=6,
-        bold_headings=False,
-        date_style="american slash",
-        color_links=True,
-        url_color="blue",
-    )
     with open(TXT_PATH, encoding="utf-8") as f:
         cv = parse(f.read())
     with open(TEX_PATH, "w", encoding="utf-8") as f:
-        f.write(render(template_path=TEMPLATE_PATH, settings=settings, cv=cv))
+        f.write(render(template_path=TEMPLATE_PATH, settings=TEST_SETTINGS, cv=cv))
     run_lualatex(TEX_PATH, dest_path="tests/test_output.pdf")
 
 
 if __name__ == "__main__":
     # test_parse()
-    test_render()
+    test_json_read_write()
+    # test_render()

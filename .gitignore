@@ -169,6 +169,7 @@ cython_debug/
 *.out
 *.synctex.gz
 *.pdf
-tests/test_output.tex
+tests/test_output.*
+settings/last_used.json
 
 .vscode

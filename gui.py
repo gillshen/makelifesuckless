@@ -31,6 +31,7 @@ from render import Settings
 from txtparse import SmartDate
 
 APP_TITLE = "Curriculum Victim"
+LAST_USED_SETTINGS = "settings/last_used.json"
 
 
 class MainWindow(QMainWindow):
@@ -97,6 +98,7 @@ class MainWindow(QMainWindow):
         editor_panel.setSizes([450, 150])
 
         self.new_file()
+        self._load_initial_settings()
         self.show()
 
     def _create_menu(self):
@@ -218,6 +220,13 @@ class MainWindow(QMainWindow):
 
         self.menubar.addMenu(settings_menu)
 
+    def _load_initial_settings(self):
+        try:
+            initial_settings = Settings.from_json(LAST_USED_SETTINGS)
+        except FileNotFoundError:
+            initial_settings = Settings()
+        self.settings_frame.load_settings(initial_settings)
+
     def closeEvent(self, event: QCloseEvent):
         # Ask user to handle unsaved change if any
         if self.isWindowModified() and not _ask_yesno(
@@ -230,10 +239,10 @@ class MainWindow(QMainWindow):
         ):
             event.ignore()
         else:
+            # Save current settings
+            settings = self.settings_frame.get_settings()
+            settings.to_json(LAST_USED_SETTINGS)
             event.accept()
-
-    def get_settings(self) -> Settings:
-        return self.settings_frame.get_settings()
 
     def handle_exc(self, e: Exception):
         self.log(traceback.format_exc())
@@ -247,7 +256,7 @@ class MainWindow(QMainWindow):
         from pprint import pformat
         from dataclasses import asdict
 
-        self.log(pformat(asdict(self.get_settings())))
+        self.log(pformat(asdict(self.settings_frame.get_settings())))
 
     def update_filepath(self):
         if self._filepath:
@@ -330,16 +339,23 @@ class MainWindow(QMainWindow):
         )
         if not filepath:
             return
-        # TODO
-        print(filepath)
+        settings = Settings.from_json(filepath=filepath)
+        self.settings_frame.load_settings(settings)
 
     def export_settings(self):
-        # TODO
-        print("export settings")
+        filepath, _ = QFileDialog.getSaveFileName(
+            self,
+            caption="Export Settings",
+            directory="settings",
+            filter="JSON Files (*json)",
+        )
+        if not filepath:
+            return
+        settings = self.settings_frame.get_settings()
+        settings.to_json(filepath=filepath)
 
     def restore_default(self):
-        # TODO
-        print("restore default settings")
+        self.settings_frame.load_settings(Settings())
 
 
 class SettingsFrame(QFrame):
@@ -703,6 +719,4 @@ def _show_error(*, parent=None, text="", title=APP_TITLE):
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = MainWindow()
-    test_settings = Settings()
-    window.settings_frame.load_settings(test_settings)
     sys.exit(app.exec())

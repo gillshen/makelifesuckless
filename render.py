@@ -1,4 +1,6 @@
 import dataclasses
+import json
+
 import jinja2
 
 from txtparse import CV
@@ -52,6 +54,17 @@ class Settings:
     url_font_follows_text: bool = True
     color_links: bool = False
     url_color: str = "black"
+
+    @classmethod
+    def from_json(cls, filepath: str) -> "Settings":
+        with open(filepath, encoding="utf-8") as f:
+            data = json.load(f)
+        return cls(**data)
+
+    def to_json(self, filepath: str, indent=4):
+        data = dataclasses.asdict(self)
+        with open(filepath, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=indent)
 
 
 def render(*, template_path: str, cv: CV, settings: Settings):
