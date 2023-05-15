@@ -39,6 +39,9 @@ from txtparse import SmartDate
 APP_TITLE = "Curriculum Victim"
 LAST_USED_SETTINGS = "settings/last_used.json"
 
+# For validating input
+SAFE_LATEX = QRegularExpression(r"[^\\~#$%^&_{}]*")
+
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -94,8 +97,9 @@ class MainWindow(QMainWindow):
         # Create menu actions
         self._create_menu()
 
-        # UI preferences
-        self.editor.setFont(QFont("Consolas", pointSize=12))  # TODO preferences
+        # TODO UI preferences
+        self.editor.setFont(QFont("Consolas", pointSize=12))
+        self.console.setFont(QFont("Consolas", pointSize=10))
         # TODO line wrap
 
         # Set window properties
@@ -458,6 +462,16 @@ class SettingsFrame(QFrame):
         layout.addWidget(SettingsHeading("Space Between Entries"))
         self.entry_skip_selector = QSpinBox(self, suffix=" pt")
         layout.addWidget(self.entry_skip_selector)
+        layout.addSpacing(space_within_group)
+
+        layout.addWidget(SettingsHeading("Space Before Section Titles"))
+        self.before_sectitle_skip_selector = QSpinBox(self, suffix=" pt")
+        layout.addWidget(self.before_sectitle_skip_selector)
+        layout.addSpacing(space_within_group)
+
+        layout.addWidget(SettingsHeading("Space After Section Titles"))
+        self.after_sectitle_skip_selector = QSpinBox(self, suffix=" pt")
+        layout.addWidget(self.after_sectitle_skip_selector)
         layout.addSpacing(space_after_group)
 
         layout.addWidget(Separator(self))
@@ -489,15 +503,28 @@ class SettingsFrame(QFrame):
         layout.addWidget(self.skills_title_edit)
         layout.addSpacing(space_after_group)
 
+        self.bold_award_names_check = QCheckBox("Bold Award Names", self)
+        layout.addWidget(self.bold_award_names_check)
+        self.bold_skillset_names_check = QCheckBox("Bold Skillset Names", self)
+        layout.addWidget(self.bold_skillset_names_check)
+        layout.addSpacing(space_after_group)
+
         layout.addWidget(Separator(self))
         layout.addSpacing(space_after_separator)
+
+        # contact divider
+        layout.addWidget(SettingsHeading("Contact Divider"))
+        self.contact_divider_edit = QLineEdit(self)
+        validator = QRegularExpressionValidator(SAFE_LATEX, self.contact_divider_edit)
+        self.contact_divider_edit.setValidator(validator)
+        layout.addWidget(self.contact_divider_edit)
+        layout.addSpacing(space_after_group)
 
         # bullet appearance
         layout.addWidget(SettingsHeading("Bullet Text"))
         self.bullet_text_edit = QLineEdit(self)
-        valid = QRegularExpression(r"[^\\~%{}]*")
-        bullet_validator = QRegularExpressionValidator(valid, self.bullet_text_edit)
-        self.bullet_text_edit.setValidator(bullet_validator)
+        validator = QRegularExpressionValidator(SAFE_LATEX, self.bullet_text_edit)
+        self.bullet_text_edit.setValidator(validator)
         layout.addWidget(self.bullet_text_edit)
         layout.addSpacing(space_within_group)
 
@@ -574,6 +601,8 @@ class SettingsFrame(QFrame):
         s.line_spread = self.line_spread_selector.value()
         s.paragraph_skip_in_pt = self.paragraph_skip_selector.value()
         s.entry_skip_in_pt = self.entry_skip_selector.value()
+        s.before_sectitle_skip_in_pt = self.before_sectitle_skip_selector.value()
+        s.after_sectitle_skip_in_pt = self.after_sectitle_skip_selector.value()
 
         s.bold_headings = self.bold_headings_check.isChecked()
         s.all_cap_headings = self.all_cap_headings_check.isChecked()
@@ -582,9 +611,14 @@ class SettingsFrame(QFrame):
         s.awards_section_title = self.awards_title_edit.text()
         s.skills_section_title = self.skills_title_edit.text()
 
+        s.contact_divider = self.contact_divider_edit.text()
+
         s.bullet_text = self.bullet_text_edit.text()
         s.bullet_indent_in_em = self.bullet_indent_selector.value()
         s.bullet_item_sep_in_em = self.bullet_item_sep_selector.value()
+
+        s.bold_award_names = self.bold_award_names_check.isChecked()
+        s.bold_skillset_names = self.bold_skillset_names_check.isChecked()
 
         s.date_style = self.date_style_selector.get_style()
 
@@ -620,6 +654,8 @@ class SettingsFrame(QFrame):
         self.line_spread_selector.setValue(s.line_spread)
         self.paragraph_skip_selector.setValue(s.paragraph_skip_in_pt)
         self.entry_skip_selector.setValue(s.entry_skip_in_pt)
+        self.before_sectitle_skip_selector.setValue(s.before_sectitle_skip_in_pt)
+        self.after_sectitle_skip_selector.setValue(s.after_sectitle_skip_in_pt)
 
         self.bold_headings_check.setChecked(s.bold_headings)
         self.all_cap_headings_check.setChecked(s.all_cap_headings)
@@ -628,9 +664,14 @@ class SettingsFrame(QFrame):
         self.awards_title_edit.setText(s.awards_section_title)
         self.skills_title_edit.setText(s.skills_section_title)
 
+        self.contact_divider_edit.setText(s.contact_divider)
+
         self.bullet_text_edit.setText(s.bullet_text)
         self.bullet_indent_selector.setValue(s.bullet_indent_in_em)
         self.bullet_item_sep_selector.setValue(s.bullet_item_sep_in_em)
+
+        self.bold_award_names_check.setChecked(s.bold_award_names)
+        self.bold_skillset_names_check.setChecked(s.bold_skillset_names)
 
         self.date_style_selector.set_from_style(s.date_style)
         self.url_follows_text_check.setChecked(s.url_font_follows_text)

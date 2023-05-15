@@ -43,6 +43,8 @@ class Settings:
     line_spread: float = 1.0
     paragraph_skip_in_pt: int = 0
     entry_skip_in_pt: int = 6
+    before_sectitle_skip_in_pt: int = 12
+    after_sectitle_skip_in_pt: int = 3
 
     # heading appearance
     bold_headings: bool = True
@@ -56,8 +58,15 @@ class Settings:
     bullet_indent_in_em: float = 0.0
     bullet_item_sep_in_em: float = 1.0
 
+    # awards & skills appearance
+    bold_award_names: bool = False
+    bold_skillset_names: bool = True
+
     # date formatting
     date_style: str = "american"
+
+    # contact divider
+    contact_divider: str = "|"
 
     # url appearance
     url_font_follows_text: bool = True
