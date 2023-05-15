@@ -299,6 +299,9 @@ def _preprocess(line: str):
     # protect % sign (latex comments not allowed as a result)
     line = line.replace("%", "\\%")
 
+    # escape `&`
+    line = line.replace("&", "\\&")
+
     # remove excessive whitespace
     line = re.sub(r"\s+", " ", line).strip()
 

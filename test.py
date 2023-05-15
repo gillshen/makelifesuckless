@@ -2,7 +2,7 @@ from txtparse import parse
 from render import Settings, render
 from shell import run_lualatex
 
-TXT_PATH = "tests/test_src1.txt"
+TXT_PATH = "tests/sample1.txt"
 TEX_PATH = "tests/test_output.tex"
 TEMPLATE_PATH = "templates/classic.tex"
 
@@ -36,7 +36,7 @@ TEST_SETTINGS = Settings(
     line_spread=1.05,
     paragraph_skip_in_pt=0,
     entry_skip_in_pt=6,
-    bold_headings=True,
+    bold_headings=False,
     bullet_text="\u2020",
     bullet_item_sep_in_em=1.0,
     date_style="american",

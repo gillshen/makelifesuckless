@@ -72,9 +72,10 @@
 \define@key{edukeys}{courses}{\def\edu@courses{#1}}
 
 \newcommand{\edu}[2]{%
-    \begingroup
+    \begingroup%
     \setkeys{edukeys}{loc=, startdate=, enddate=, degree=, major=, minor=, gpa=, courses=, #2}%
-    \textbf{\ifx\edu@degree\empty\else{\edu@degree, }\fi#1}\hfill\edu@loc\par
+    \textbf{#1}\hfill\edu@loc\par
+    \ifx\edu@degree\empty\else{\edu@degree\hfill}\fi%
     \ifx\edu@startdate\empty\edu@enddate\else{\edu@startdate\,--\,\edu@enddate}\fi\par
     \ifx\edu@gpa\empty\else{GPA: \edu@gpa\par}\fi
     \ifx\edu@major\empty\else{Major: \edu@major\ifx\edu@minor\empty\else{ | Minor: \edu@minor}\fi\par}\fi
@@ -91,7 +92,7 @@
 \define@key{activitykeys}{weeksperyear}{\def\activity@weeksperyear{#1}}
 
 \newenvironment{activity}[1]{%
-    \begingroup
+    \begingroup%
     \setkeys{activitykeys}{org=, loc=, startdate=, enddate=, hoursperweek=, weeksperyear=, #1}%
     \textbf{\activity@role\ifx\activity@org\empty\else{, \activity@org}\fi}%
     <! if settings.show_activity_locations !>\hfill\activity@loc<! endif !>\par
@@ -167,9 +168,11 @@
 
 <! set sections = cv.activity_sections or [""] -!>
 <! for section in sections !>
+<! set activities = cv.activities_of_section(section) -!>
+<! if activities -!>
 \section{<< section or settings.default_activities_section_title >>}
 
-<! for activity in cv.activities_of_section(section) !>
+<! for activity in activities !>
 \begin{activity}{%
     role={<< activity.role >>},
     org={<< activity.org >>},
@@ -184,5 +187,6 @@
 <! endfor -!>
 \end{activity}
 <! endfor !>
+<! endif !>
 <! endfor !>
 \end{document}
