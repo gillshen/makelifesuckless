@@ -90,10 +90,17 @@ class MainWindow(QMainWindow):
 
         control_panel_layout.addSpacing(10)
 
-        run_button = QPushButton("Run")
+        button_frame = QFrame(self)
+        control_panel_layout.addWidget(button_frame)
+        button_frame_layout = QGridLayout()
+        button_frame.setLayout(button_frame_layout)
+
+        parse_button = QPushButton("Parse", self)
+        parse_button.clicked.connect(self.show_parsed)
+        button_frame_layout.addWidget(parse_button, 0, 0)
+        run_button = QPushButton("Run", self)
         run_button.clicked.connect(self.run_latex)
-        control_panel_layout.addWidget(run_button)
-        run_button.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum)
+        button_frame_layout.addWidget(run_button, 0, 1)
 
         # Create menu actions
         self._create_menu()
@@ -104,13 +111,12 @@ class MainWindow(QMainWindow):
         # TODO line wrap
 
         # Set window properties
-        self.setGeometry(200, 100, 1000, 640)
+        self.setGeometry(200, 100, 1000, 660)
         central_widget.setSizes([680, 320])
         editor_panel.setSizes([450, 150])
 
         self.new_file()
         self._load_initial_settings()
-        self.show()
 
     def _create_menu(self):
         # File menu
@@ -121,10 +127,17 @@ class MainWindow(QMainWindow):
         new_action.setShortcut(QKeySequence("Ctrl+n"))
         file_menu.addAction(new_action)
 
+        file_menu.addSeparator()
+
         open_action = QAction("&Open...", self)
         open_action.triggered.connect(self.open_file)
         open_action.setShortcut(QKeySequence("Ctrl+o"))
         file_menu.addAction(open_action)
+
+        reload_action = QAction("&Reload", self)
+        reload_action.triggered.connect(self.reload_file)
+        reload_action.setShortcut(QKeySequence("F5"))
+        file_menu.addAction(reload_action)
 
         file_menu.addSeparator()
 
@@ -196,7 +209,7 @@ class MainWindow(QMainWindow):
         edit_menu.addSeparator()
 
         toggle_wrap_action = QAction("Wrap Lines", self)
-        toggle_wrap_action.triggered.connect(self.toggle_editor_wrap)
+        toggle_wrap_action.triggered.connect(self.toggle_wrap)
         toggle_wrap_action.setShortcut(QKeySequence("Alt+z"))
         toggle_wrap_action.setCheckable(True)
         toggle_wrap_action.setChecked(True)
@@ -211,6 +224,11 @@ class MainWindow(QMainWindow):
 
         # LaTeX menu
         latex_menu = QMenu("La&TeX", self)
+
+        parse_action = QAction("&Parse", self)
+        parse_action.triggered.connect(self.show_parsed)
+        parse_action.setShortcut(QKeySequence("Ctrl+`"))
+        latex_menu.addAction(parse_action)
 
         run_latex_action = QAction("&Run", self)
         run_latex_action.triggered.connect(self.run_latex)
@@ -228,8 +246,6 @@ class MainWindow(QMainWindow):
         export_settings_action.triggered.connect(self.export_settings)
         export_settings_action.setShortcut(QKeySequence("Ctrl+e"))
         latex_menu.addAction(export_settings_action)
-
-        latex_menu.addSeparator()
 
         restore_default_action = QAction("Restore &Default", self)
         restore_default_action.triggered.connect(self.restore_default)
@@ -265,13 +281,26 @@ class MainWindow(QMainWindow):
     def log(self, message: str):
         self.console.append(message)
 
+    def show_parsed(self):
+        try:
+            cv, unparsed = parse(self.editor.toPlainText())
+            self.console.setPlainText(cv.to_json())
+        except Exception as e:
+            self._handle_exc(e)
+            return
+        if unparsed:
+            lines = "\n".join(map(repr, unparsed))
+            show_info(
+                parent=self, text=f"Unable to parse the following lines:\n\n{lines}"
+            )
+
     def run_latex(self):
         try:
             # TODO hard-coded paths
             template_path = "templates/classic.tex"
             tex_path = "output.tex"
 
-            cv = parse(self.editor.toPlainText())
+            cv, _ = parse(self.editor.toPlainText())
             settings = self.settings_frame.get_settings()
             rendered = render(template_path=template_path, cv=cv, settings=settings)
             with open(tex_path, "w", encoding="utf-8") as tex_file:
@@ -293,7 +322,7 @@ class MainWindow(QMainWindow):
 
     def _handle_proc_finish(self, exit_code, exit_status):
         if exit_code != 0 or exit_status != QProcess.ExitStatus.NormalExit:
-            _show_error(
+            show_error(
                 parent=self,
                 text=(
                     f"Sorry, an unexpected error occurred.\n"
@@ -314,13 +343,13 @@ class MainWindow(QMainWindow):
 
     def _handle_exc(self, e: Exception):
         self.log(traceback.format_exc())
-        _show_error(parent=self, text=f"Oops, something went wrong.\n{e}")
+        show_error(parent=self, text=f"Oops, something went wrong.\n{e}")
 
     def update_filepath(self):
         if self._filepath:
             filename = os.path.basename(self._filepath)
         else:
-            filename = "<untitled>"
+            filename = "untitled"
         self.setWindowTitle(f"{filename}[*] - {APP_TITLE}")
         self.setWindowFilePath(self._filepath)
 
@@ -332,10 +361,7 @@ class MainWindow(QMainWindow):
         self._filepath = ""
         self.update_filepath()
 
-    def open_file(self):
-        filepath, _ = QFileDialog.getOpenFileName(
-            self, caption="Open File", directory="", filter="TXT Files (*.txt)"
-        )
+    def _open_file(self, filepath: str):
         if not filepath:
             return
         try:
@@ -348,6 +374,18 @@ class MainWindow(QMainWindow):
             self.setWindowModified(False)
             self._filepath = filepath
             self.update_filepath()
+            # show the parsed json in the console
+            self.show_parsed()
+
+    def open_file(self):
+        # TODO last opened dir
+        filepath, _ = QFileDialog.getOpenFileName(
+            self, caption="Open File", directory="", filter="TXT Files (*.txt)"
+        )
+        self._open_file(filepath)
+
+    def reload_file(self):
+        self._open_file(self._filepath)
 
     def _save_file(self, filepath: str):
         with open(filepath, "w", encoding="utf-8") as f:
@@ -364,6 +402,7 @@ class MainWindow(QMainWindow):
             self._handle_exc(e)
 
     def save_file_as(self):
+        # TODO last saved dir
         filepath, _ = QFileDialog.getSaveFileName(
             self, caption="Save File", directory="", filter="TXT Files (*.txt)"
         )
@@ -377,12 +416,13 @@ class MainWindow(QMainWindow):
             self._filepath = filepath
             self.update_filepath()
 
-    def toggle_editor_wrap(self, state):
+    def toggle_wrap(self, state):
         if state:
             wrap_mode = QPlainTextEdit.LineWrapMode.WidgetWidth
         else:
             wrap_mode = QPlainTextEdit.LineWrapMode.NoWrap
         self.editor.setLineWrapMode(wrap_mode)
+        self.console.setLineWrapMode(wrap_mode)
 
     def launch_pref_dialog(self):
         # TODO
@@ -864,14 +904,23 @@ def _ask_yesno(
     return msg_box.exec() == _.Yes
 
 
-def _show_error(*, parent=None, text="", title=APP_TITLE):
-    msg_box = QMessageBox(parent=parent, text=text)
-    msg_box.setWindowTitle(title)
-    msg_box.setIcon(QMessageBox.Icon.Critical)
+def show_message(*, parent=None, icon=None, **kwargs):
+    msg_box = QMessageBox(parent=parent, **kwargs)
+    msg_box.setWindowTitle(APP_TITLE)
+    msg_box.setIcon(icon)
     return msg_box.exec()
 
 
-if __name__ == "__main__":
+def show_error(*, parent=None, text=""):
+    return show_message(parent=parent, icon=QMessageBox.Icon.Critical, text=text)
+
+
+def show_info(*, parent=None, text=""):
+    return show_message(parent=parent, icon=QMessageBox.Icon.Information, text=text)
+
+
+def main():
     app = QApplication(sys.argv)
     window = MainWindow()
+    window.show()
     sys.exit(app.exec())

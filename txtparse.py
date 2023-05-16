@@ -1,9 +1,14 @@
 import dataclasses
 import datetime
 import re
+import json
 
 
-class DateError(ValueError):
+class ParsingError(ValueError):
+    pass
+
+
+class DateError(ParsingError):
     pass
 
 
@@ -212,9 +217,13 @@ class CV:
     def activities_of_section(self, section: str = ""):
         return [a for a in self.activities if a.section == section]
 
+    def to_json(self, indent=4):
+        return json.dumps(dataclasses.asdict(self), indent=indent)
 
-def parse(src: str) -> CV:
+
+def parse(src: str) -> tuple[CV, list[str]]:
     cv = CV()
+    unparsed = []
     curren_data_object = None
     current_section = ""
 
@@ -288,11 +297,13 @@ def parse(src: str) -> CV:
                 curren_data_object.skills = skills
 
             else:
-                print(f"unparseable line: {line!r}")
+                unparsed.append(line)
         except DateError:
-            raise
+            raise DateError(f"Wrong date in line: {line!r}")
+        except Exception as e:
+            raise ParsingError(f"Unparsable line: {line!r}\n{e}")
 
-    return cv
+    return cv, unparsed
 
 
 def _preprocess(line: str):
