@@ -1,0 +1,69 @@
+name: Guido van Rossum
+email: guido@python.org
+website: https://gvanrossum.github.io/
+phone: (123) 456-7890
+
+school: University of Amsterdam
+loc: Amsterdam, The Netherlands
+degree: Master in Mathematics & Computer Science
+start date: 1981
+end date: 1982
+gpa: unknown
+
+school: University of Amsterdam
+loc: Amsterdam, The Netherlands
+degree: Bachelor of Science
+major: Computer Science
+start date: 1977
+end date: 1981
+
+# Work Experience
+
+role: Distinguished Engineer
+org: Microsoft, Inc.
+loc: San Francisco, California
+start date: 2020-11-12
+end date: Present
+- Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Ut purus elit, vestibulum ut, placerat ac, adipiscing vitae, felis. Curabitur dictum gravida mauris.
+- Donec vehicula augue eu neque. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas.
+
+role: Senior Staff Software Engineer
+org: Google LLC
+loc: Palo Alto, California 
+start date: 2012-9
+end date: 2012-12
+- This is **bold** and this is *italic*. ***Bold italic*** is also possible.
+- You can nest ***bold** within italic* and ***italic* within bold**. You can also embed links, [like this](https://www.python.org/).
+- Two consecutive [hyphens](https://www.thepunctuationguide.com/hyphen.html) will be converted to an [*en dash*](https://www.thepunctuationguide.com/en-dash.html) (--); and three, to an [*em dash*](https://www.thepunctuationguide.com/em-dash.html) (---).
+
+# Projects
+
+role: Creator
+org: The Python Programming Language
+start date: 1989
+end date: Present
+hours per week: 14
+weeks per year: 40
+- Designed and implemented the Python programming language, creating a robust and flexible tool used worldwide.
+- Provide guidance and oversight to the Python development community. Actively contribute to the growth and evolution of Python, including major releases and feature enhancements.
+
+role: Contributor
+org: Amoeba Project
+start date: 1986
+end date: 1991
+- Contributed to the development of a distributed operating system developed jointly with the Computer Systems Group of the Department of Computer Science of the Free University of Amsterdam.
+
+award: Dijkstra Fellowship by CWI
+award date: 2019-11
+
+award: ACM Distinguished Engineer
+award date: 2006-10
+
+award: Free Software Foundation Award
+award date: 2002-02
+
+skillset name: Programming Languages
+skills: Python, C, C++
+
+skillset name: Tools & Technologies
+skills: Git, Docker, Jenkins, Jupyter Notebook
