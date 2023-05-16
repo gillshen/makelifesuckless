@@ -95,12 +95,12 @@ class MainWindow(QMainWindow):
         button_frame_layout = QGridLayout()
         button_frame.setLayout(button_frame_layout)
 
-        parse_button = QPushButton("Parse", self)
+        parse_button = QPushButton("Parse Source", self)
         parse_button.clicked.connect(self.show_parsed)
         button_frame_layout.addWidget(parse_button, 0, 0)
-        run_button = QPushButton("Run", self)
-        run_button.clicked.connect(self.run_latex)
-        button_frame_layout.addWidget(run_button, 0, 1)
+        self.run_button = QPushButton("Run LaTeX", self)
+        self.run_button.clicked.connect(self.run_latex)
+        button_frame_layout.addWidget(self.run_button, 0, 1)
 
         # Create menu actions
         self._create_menu()
@@ -225,15 +225,15 @@ class MainWindow(QMainWindow):
         # LaTeX menu
         latex_menu = QMenu("La&TeX", self)
 
-        parse_action = QAction("&Parse", self)
+        parse_action = QAction("&Parse Source", self)
         parse_action.triggered.connect(self.show_parsed)
         parse_action.setShortcut(QKeySequence("Ctrl+`"))
         latex_menu.addAction(parse_action)
 
-        run_latex_action = QAction("&Run", self)
-        run_latex_action.triggered.connect(self.run_latex)
-        run_latex_action.setShortcut(QKeySequence("Ctrl+Shift+r"))
-        latex_menu.addAction(run_latex_action)
+        self.run_latex_action = QAction("&Run LaTeX", self)
+        self.run_latex_action.triggered.connect(self.run_latex)
+        self.run_latex_action.setShortcut(QKeySequence("Ctrl+Shift+r"))
+        latex_menu.addAction(self.run_latex_action)
 
         latex_menu.addSeparator()
 
@@ -295,6 +295,9 @@ class MainWindow(QMainWindow):
             )
 
     def run_latex(self):
+        self.run_button.setDisabled(True)
+        self.run_latex_action.setDisabled(True)
+        self.console.clear()
         try:
             # TODO hard-coded paths
             template_path = "templates/classic.tex"
@@ -321,15 +324,18 @@ class MainWindow(QMainWindow):
         self.log(output)
 
     def _handle_proc_finish(self, exit_code, exit_status):
+        # re-enable UI
+        self.run_button.setDisabled(False)
+        self.run_latex_action.setDisabled(False)
+
+        # handle errors if any
         if exit_code != 0 or exit_status != QProcess.ExitStatus.NormalExit:
             show_error(
                 parent=self,
-                text=(
-                    f"Sorry, an unexpected error occurred.\n"
-                    f"{exit_code=}, {exit_status=}"
-                ),
+                text=f"Sorry, something went wrong.\n" f"{exit_code=}, {exit_status=}",
             )
             return
+
         self.log("Operation completed successfully.")
         try:
             # clean up
@@ -667,13 +673,13 @@ class SettingsFrame(QFrame):
         s.show_activity_locations = self.activity_location_check.isChecked()
         s.show_time_commitments = self.time_commitment_check.isChecked()
 
-        s.main_font = self.text_font_selector.currentText()
+        s.main_font = self.text_font_selector.currentFont().family()
         s.font_size_in_point = self.text_size_selector.value()
 
-        s.heading_font = self.heading_font_selector.currentText()
+        s.heading_font = self.heading_font_selector.currentFont().family()
         s.heading_relative_size = self.heading_size_selector.get_command()
 
-        s.title_font = self.title_font_selector.currentText()
+        s.title_font = self.title_font_selector.currentFont().family()
         s.title_relative_size = self.title_size_selector.get_command()
 
         s.proportional_numbers = self.proportional_numbers_check.isChecked()

@@ -41,11 +41,11 @@ WEEKS = _compile(r"weeks\s+per\s+year")
 DESCRIPTION = re.compile(r"^\s*[-•]\s*(.+)$")
 
 AWARD = _compile("award")
-AWARD_DATE = _compile(r"award\s+date")
 
 TEST = _compile("test")
 SCORE = _compile("score")
-TEST_DATE = _compile(r"test\s+date")
+
+X_DATE = _compile(r"(?:award|test)\s+date")
 
 SKILLSET_NAME = _compile(r"skillset\s+name")
 SKILLS = _compile("skills")
@@ -232,72 +232,73 @@ def parse(src: str) -> tuple[CV, list[str]]:
             continue
 
         try:
-            if name := _match(NAME, line):
+            if (name := _match(NAME, line)) is not None:
                 cv.name = name
-            elif email := _match(EMAIL, line):
+            elif (email := _match(EMAIL, line)) is not None:
                 cv.email = email
-            elif phone := _match(PHONE, line):
+            elif (phone := _match(PHONE, line)) is not None:
                 cv.phone = phone
-            elif address := _match(ADDRESS, line):
+            elif (address := _match(ADDRESS, line)) is not None:
                 cv.address = address
-            elif website := _match(WEBSITE, line):
+            elif (website := _match(WEBSITE, line)) is not None:
                 cv.website = website
 
-            elif new_section := _match(SECTION, line):
+            elif (new_section := _match(SECTION, line)) is not None:
                 current_section = new_section
                 cv.activity_sections.append(current_section)
-            elif school := _match(SCHOOL, line):
+            elif (school := _match(SCHOOL, line)) is not None:
                 curren_data_object = Education(school=school)
                 cv.education.append(curren_data_object)
-            elif role := _match(ROLE, line):
+            elif (role := _match(ROLE, line)) is not None:
                 curren_data_object = Activity(role=role, section=current_section)
                 cv.activities.append(curren_data_object)
             elif (skillset_name := _match(SKILLSET_NAME, line)) is not None:
                 curren_data_object = SkillSet(name=skillset_name)
                 cv.skillsets.append(curren_data_object)
-            elif award_name := _match(AWARD, line):
+            elif (award_name := _match(AWARD, line)) is not None:
                 curren_data_object = Award(name=award_name)
                 cv.awards.append(curren_data_object)
-            elif test_name := _match(TEST, line):
+            elif (test_name := _match(TEST, line)) is not None:
                 curren_data_object = Test(name=test_name)
                 cv.tests.append(curren_data_object)
 
-            elif loc := _match(LOC, line):
+            elif (loc := _match(LOC, line)) is not None:
                 curren_data_object.loc = loc
-            elif start_date := _match(START_DATE, line):
+            elif (start_date := _match(START_DATE, line)) is not None:
                 curren_data_object.start_date = SmartDate.from_str(start_date)
-            elif end_date := _match(END_DATE, line):
+            elif (end_date := _match(END_DATE, line)) is not None:
                 curren_data_object.end_date = SmartDate.from_str(end_date)
-            elif x_date := _match(AWARD_DATE, line) or _match(TEST_DATE, line):
+            elif (x_date := _match(X_DATE, line)) is not None:
                 curren_data_object.date = SmartDate.from_str(x_date)
 
-            elif degree := _match(DEGREE, line):
+            elif (degree := _match(DEGREE, line)) is not None:
                 curren_data_object.degree = degree
-            elif major := _match(MAJOR, line):
+            elif (major := _match(MAJOR, line)) is not None:
                 curren_data_object.major = major
-            elif minor := _match(MINOR, line):
+            elif (minor := _match(MINOR, line)) is not None:
                 curren_data_object.minor = minor
-            elif gpa := _match(GPA, line):
+            elif (gpa := _match(GPA, line)) is not None:
                 curren_data_object.gpa = gpa
-            elif courses := _match(COURSES, line):
+            elif (courses := _match(COURSES, line)) is not None:
                 curren_data_object.courses = courses
 
-            elif org := _match(ORG, line):
+            elif (org := _match(ORG, line)) is not None:
                 curren_data_object.org = org
-            elif hours := _match(HOURS, line):
+            elif (hours := _match(HOURS, line)) is not None:
                 curren_data_object.hours_per_week = hours
-            elif weeks := _match(WEEKS, line):
+            elif (weeks := _match(WEEKS, line)) is not None:
                 curren_data_object.weeks_per_year = weeks
-            elif description := _match(DESCRIPTION, line):
+            elif (description := _match(DESCRIPTION, line)) is not None:
                 curren_data_object.descriptions.append(description)
 
-            elif score := _match(SCORE, line):
+            elif (score := _match(SCORE, line)) is not None:
                 curren_data_object.score = score
-            elif skills := _match(SKILLS, line):
+            elif (skills := _match(SKILLS, line)) is not None:
                 curren_data_object.skills = skills
 
             else:
                 unparsed.append(line)
+
         except DateError:
             raise DateError(f"Wrong date in line: {line!r}")
         except Exception as e:
@@ -307,11 +308,17 @@ def parse(src: str) -> tuple[CV, list[str]]:
 
 
 def _preprocess(line: str):
-    # protect % sign (latex comments not allowed as a result)
-    line = line.replace("%", "\\%")
+    # preserve the leading `#` if any and escape other `#`s
+    line = re.sub(r"^\s*#", "\uffff", line)
+    line = line.replace("#", "\\#").replace("\uffff", "#")
 
-    # escape `&`
-    line = line.replace("&", "\\&")
+    # protect % sign (latex comments not allowed as a result)
+    # escape special characters `_`, `$`, and `&`
+    line = re.sub("([_$%&])", r"\\\1", line)
+
+    # preserve `^` and escaped `*`
+    line = line.replace("^", "\\^{}")
+    line = line.replace("\\*", '{\\char"002A}')
 
     # remove excessive whitespace
     line = re.sub(r"\s+", " ", line).strip()
