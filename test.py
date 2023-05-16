@@ -1,9 +1,12 @@
+import os
+import subprocess
+
 from txtparse import parse
 from render import Settings, render
-from shell import run_lualatex
+
 
 TXT_PATH = "tests/sample1.txt"
-TEX_PATH = "tests/test_output.tex"
+TEX_PATH = "output.tex"
 TEMPLATE_PATH = "templates/classic.tex"
 
 
@@ -47,8 +50,8 @@ TEST_SETTINGS = Settings(
 
 
 def test_json_read_write():
-    TEST_SETTINGS.to_json("tests/test_output.json", indent=2)
-    new_settings = Settings.from_json("tests/test_output.json")
+    TEST_SETTINGS.to_json("output.json", indent=2)
+    new_settings = Settings.from_json("output.json")
     assert new_settings == TEST_SETTINGS
 
 
@@ -57,7 +60,38 @@ def test_render():
         cv = parse(f.read())
     with open(TEX_PATH, "w", encoding="utf-8") as f:
         f.write(render(template_path=TEMPLATE_PATH, settings=TEST_SETTINGS, cv=cv))
-    run_lualatex(TEX_PATH, dest_path="tests/test_output.pdf")
+    run_lualatex(TEX_PATH, dest_path="output.pdf")
+
+
+def run_lualatex(
+    src_path,
+    *,
+    dest_path="",
+    stdout=None,
+    stderr=None,
+    capture_output=False,
+    open_when_done=True,
+):
+    proc = subprocess.run(
+        ["lualatex", "-interaction=nonstopmode", src_path],
+        check=True,
+        stdout=stdout,
+        stderr=stderr,
+        capture_output=capture_output,
+    )
+    # move the resultant pdf
+    base_name, _ = os.path.splitext(os.path.split(src_path)[-1])
+    base_path = f"{base_name}.pdf"
+    if dest_path:
+        os.replace(base_path, dest_path)
+    if open_when_done:
+        os.startfile(os.path.join(*os.path.split(dest_path or base_path)))
+    # clean up
+    os.remove(f"{base_name}.aux")
+    os.remove(f"{base_name}.log")
+    os.remove(f"{base_name}.out")
+
+    return proc
 
 
 if __name__ == "__main__":

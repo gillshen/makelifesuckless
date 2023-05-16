@@ -169,6 +169,7 @@ cython_debug/
 *.out
 *.synctex.gz
 *.pdf
+output.*
 tests/test_*.*
 settings/last_used.json
 

@@ -2,7 +2,7 @@ import sys
 import os
 import traceback
 
-from PyQt6.QtCore import Qt, QRegularExpression
+from PyQt6.QtCore import Qt, QRegularExpression, QProcess
 from PyQt6.QtGui import (
     QAction,
     QKeySequence,
@@ -35,7 +35,6 @@ from PyQt6.QtWidgets import (
 
 from render import Settings, render
 from txtparse import SmartDate, parse
-from shell import run_lualatex
 
 APP_TITLE = "Curriculum Victim"
 LAST_USED_SETTINGS = "settings/last_used.json"
@@ -263,19 +262,14 @@ class MainWindow(QMainWindow):
             settings.to_json(LAST_USED_SETTINGS)
             event.accept()
 
-    def handle_exc(self, e: Exception):
-        self.log(traceback.format_exc())
-        _show_error(parent=self, text=f"Oops, something went wrong.\n{e}")
-
     def log(self, message: str):
         self.console.append(message)
 
     def run_latex(self):
-        self.log("Working...\n")
         try:
             # TODO hard-coded paths
             template_path = "templates/classic.tex"
-            tex_path = "tests/test_output.tex"
+            tex_path = "output.tex"
 
             cv = parse(self.editor.toPlainText())
             settings = self.settings_frame.get_settings()
@@ -283,16 +277,44 @@ class MainWindow(QMainWindow):
             with open(tex_path, "w", encoding="utf-8") as tex_file:
                 tex_file.write(rendered)
 
-            proc = run_lualatex(
-                tex_path,
-                dest_path="tests/test_output.pdf",
-                capture_output=True,
-                open_when_done=True,
-            )
+            proc = QProcess(self)
+            proc.readyReadStandardOutput.connect(self._handle_proc_output)
+            proc.finished.connect(self._handle_proc_finish)
+            proc.setProcessChannelMode(QProcess.ProcessChannelMode.SeparateChannels)
+            proc.start("lualatex", ["-interaction=nonstopmode", tex_path])
+
         except Exception as e:
-            self.handle_exc(e)
-        else:
-            self.log(proc.stdout.decode("ascii"))
+            self._handle_exc(e)
+
+    def _handle_proc_output(self):
+        proc = self.sender()
+        output = proc.readAllStandardOutput().data().decode()
+        self.log(output)
+
+    def _handle_proc_finish(self, exit_code, exit_status):
+        if exit_code != 0 or exit_status != QProcess.ExitStatus.NormalExit:
+            _show_error(
+                parent=self,
+                text=(
+                    f"Sorry, an unexpected error occurred.\n"
+                    f"{exit_code=}, {exit_status=}"
+                ),
+            )
+            return
+        self.log("Operation completed successfully.")
+        try:
+            # clean up
+            os.remove(f"output.aux")
+            os.remove(f"output.log")
+            os.remove(f"output.out")
+            # TODO if open_when_done:
+            os.startfile("output.pdf")
+        except Exception as e:
+            self._handle_exc(e)
+
+    def _handle_exc(self, e: Exception):
+        self.log(traceback.format_exc())
+        _show_error(parent=self, text=f"Oops, something went wrong.\n{e}")
 
     def update_filepath(self):
         if self._filepath:
@@ -320,7 +342,7 @@ class MainWindow(QMainWindow):
             with open(filepath, encoding="utf-8") as f:
                 text = f.read()
         except Exception as e:
-            self.handle_exc(e)
+            self._handle_exc(e)
         else:
             self.editor.setPlainText(text)
             self.setWindowModified(False)
@@ -339,7 +361,7 @@ class MainWindow(QMainWindow):
         try:
             self._save_file(self._filepath)
         except Exception as e:
-            self.handle_exc(e)
+            self._handle_exc(e)
 
     def save_file_as(self):
         filepath, _ = QFileDialog.getSaveFileName(
@@ -350,7 +372,7 @@ class MainWindow(QMainWindow):
         try:
             self._save_file(filepath=filepath)
         except Exception as e:
-            self.handle_exc(e)
+            self._handle_exc(e)
         else:
             self._filepath = filepath
             self.update_filepath()
@@ -817,10 +839,10 @@ class Separator(QFrame):
 
 
 class Console(QPlainTextEdit):
-    """Plain text widget that supports appending and auto-scrolling"""
+    # handles process outputs and supports auto-scrolling
 
     def append(self, text: str):
-        self.setPlainText(f"{self.toPlainText()}{text}")
+        self.appendPlainText(text)
         # scroll to bottom
         vbar = self.verticalScrollBar()
         vbar.setValue(vbar.maximum())

@@ -10,6 +10,13 @@ start date: 1981
 end date: 1982
 gpa: unknown
 
+school: University of Amsterdam
+loc: Amsterdam, The Netherlands
+degree: Bachelor of Science
+major: Computer Science
+start date: 1977
+end date: 1981
+
 # Work Experience
 
 role: Distinguished Engineer
