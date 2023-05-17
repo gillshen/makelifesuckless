@@ -37,7 +37,7 @@ from PyQt6.QtWidgets import (
 )
 
 import txtparse
-import render
+import tex
 
 APP_TITLE = "Curriculum Victim"
 LAST_USED_SETTINGS = "settings/last_used.json"
@@ -372,9 +372,9 @@ class MainWindow(QMainWindow):
 
     def _load_initial_settings(self):
         try:
-            initial_settings = render.Settings.from_json(LAST_USED_SETTINGS)
+            initial_settings = tex.Settings.from_json(LAST_USED_SETTINGS)
         except FileNotFoundError:
-            initial_settings = render.Settings()
+            initial_settings = tex.Settings()
         self.settings_frame.load_settings(initial_settings)
 
     def closeEvent(self, event: QCloseEvent):
@@ -422,9 +422,7 @@ class MainWindow(QMainWindow):
 
             cv, _ = txtparse.parse(self.editor.toPlainText())
             settings = self.settings_frame.get_settings()
-            rendered = render.render(
-                template_path=template_path, cv=cv, settings=settings
-            )
+            rendered = tex.render(template_path=template_path, cv=cv, settings=settings)
             with open(tex_path, "w", encoding="utf-8") as tex_file:
                 tex_file.write(rendered)
 
@@ -569,7 +567,7 @@ class MainWindow(QMainWindow):
         )
         if not filepath:
             return
-        settings = render.Settings.from_json(filepath=filepath)
+        settings = tex.Settings.from_json(filepath=filepath)
         self.settings_frame.load_settings(settings)
 
     def export_settings(self):
@@ -585,7 +583,7 @@ class MainWindow(QMainWindow):
         settings.to_json(filepath=filepath)
 
     def restore_default(self):
-        self.settings_frame.load_settings(render.Settings())
+        self.settings_frame.load_settings(tex.Settings())
 
     def increment_editor_font_size(self):
         self._config.editor_font_size += 1
@@ -884,8 +882,8 @@ class SettingsFrame(QFrame):
 
         self.color_links_check.stateChanged.connect(_update_url_color_selector)
 
-    def get_settings(self) -> render.Settings:
-        s = render.Settings()
+    def get_settings(self) -> tex.Settings:
+        s = tex.Settings()
 
         s.show_activity_locations = self.activity_location_check.isChecked()
         s.show_time_commitments = self.time_commitment_check.isChecked()
@@ -939,7 +937,7 @@ class SettingsFrame(QFrame):
 
         return s
 
-    def load_settings(self, s: render.Settings):
+    def load_settings(self, s: tex.Settings):
         self.activity_location_check.setChecked(s.show_activity_locations)
         self.time_commitment_check.setChecked(s.show_time_commitments)
 

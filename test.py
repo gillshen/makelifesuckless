@@ -2,7 +2,7 @@ import os
 import subprocess
 
 from txtparse import parse
-from render import Settings, render
+from tex import Settings, render
 
 
 TXT_PATH = "tests/sample1.txt"
