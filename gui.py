@@ -492,8 +492,6 @@ class MainWindow(QMainWindow):
         self.setWindowModified(False)
 
     def _open_file(self, filepath: str):
-        if not filepath:
-            return
         try:
             with open(filepath, encoding="utf-8") as f:
                 text = f.read()
@@ -501,6 +499,7 @@ class MainWindow(QMainWindow):
             self._handle_exc(e)
         else:
             self.editor.setPlainText(text)
+            # set window title
             self.setWindowModified(False)
             self._filepath = filepath
             self._update_filepath()
@@ -510,9 +509,15 @@ class MainWindow(QMainWindow):
     def open_file(self):
         # TODO last opened dir
         filepath, _ = QFileDialog.getOpenFileName(
-            self, caption="Open File", directory="", filter="TXT Files (*.txt)"
+            self,
+            caption="Open File",
+            directory=self._config.default_open_dir,
+            filter="TXT Files (*.txt)",
         )
-        self._open_file(filepath)
+        if filepath:
+            # update config
+            self._config.default_open_dir = os.path.dirname(filepath)
+            self._open_file(filepath)
 
     def reload_file(self):
         self._open_file(self._filepath)
@@ -534,10 +539,15 @@ class MainWindow(QMainWindow):
     def save_file_as(self):
         # TODO last saved dir
         filepath, _ = QFileDialog.getSaveFileName(
-            self, caption="Save File", directory="", filter="TXT Files (*.txt)"
+            self,
+            caption="Save File",
+            directory=self._config.default_save_dir,
+            filter="TXT Files (*.txt)",
         )
         if not filepath:
             return
+        # update config, whether save successful or not
+        self._config.default_save_dir = os.path.dirname(filepath)
         try:
             self._save_file(filepath=filepath)
         except Exception as e:
