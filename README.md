@@ -67,7 +67,7 @@ LaTeX-based cv typesetting tool
 | 个人信息 | `name` `email` `phone` `address` `website` | 这个模块只能出现一次，模块内部关键词顺序任意 |
 | 教育背景 | `school` `loc` `start date` `end date` `degree` `major` `minor` `gpa` `courses` | 可多次出现，`school`必须先于其他关键词，其他顺序任意 |
 | 活动/经历 | `role` `org` `loc` `start date` `end date` `hours per week` `weeks per year`| 可多次出现，`role`必须先于其他关键词，其他顺序任意 |
-| 考试 | `test` `test date` | 可多次出现，`test`必须先于`test date` |
+| 考试 | `test` `score` `test date` | 可多次出现，`test`必须先于`test date` |
 | 奖项 | `award`  `award date` | 可多次出现，`award`必须先于`award date` |
 | 技能 | `skillset name` `skills` | 可多次出现，`skillset name`必须先于`skills` |
 
