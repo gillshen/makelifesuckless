@@ -1,0 +1,12 @@
+{
+    "editor_font": "Consolas",
+    "editor_font_size": 12,
+    "editor_wrap_lines": true,
+    "console_font": "Consolas",
+    "console_font_size": 10,
+    "console_wrap_lines": true,
+    "default_open_dir": "",
+    "default_save_dir": "",
+    "default_output_dir": "",
+    "open_pdf_when_done": true
+}
