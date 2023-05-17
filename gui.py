@@ -280,6 +280,11 @@ class MainWindow(QMainWindow):
         insert_skillset_action.setShortcut(QKeySequence("Ctrl+Shift+k"))
         edit_menu.addAction(insert_skillset_action)
 
+        insert_test_action = QAction("Insert &Test", self)
+        insert_test_action.triggered.connect(self.insert_test)
+        insert_test_action.setShortcut(QKeySequence("Ctrl+Shift+t"))
+        edit_menu.addAction(insert_test_action)
+
         insert_award_action = QAction("Insert A&ward", self)
         insert_award_action.triggered.connect(self.insert_award)
         insert_award_action.setShortcut(QKeySequence("Ctrl+Shift+w"))
@@ -564,6 +569,9 @@ class MainWindow(QMainWindow):
 
     def insert_skillset(self):
         self.editor.insert(txtparse.MODEL_SKILLSET)
+
+    def insert_test(self):
+        self.editor.insert(txtparse.MODEL_TEST)
 
     def insert_award(self):
         self.editor.insert(txtparse.MODEL_AWARD)

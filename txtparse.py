@@ -76,6 +76,12 @@ Weeks per Year:
 - [description]
 """
 
+MODEL_TEST = """
+Test: 
+Score: 
+Test Date: 
+"""
+
 MODEL_AWARD = """
 Award: 
 Award Date: yyyy-mm
@@ -97,6 +103,8 @@ Address:
 Website: 
 
 {MODEL_EDUCATION}
+
+{MODEL_TEST}
 
 {MODEL_AWARD}
 
