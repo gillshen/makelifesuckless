@@ -1,6 +1,8 @@
 import sys
 import os
 import traceback
+import dataclasses
+import json
 
 from PyQt6.QtCore import Qt, QRegularExpression, QProcess
 from PyQt6.QtGui import (
@@ -13,13 +15,14 @@ from PyQt6.QtGui import (
 from PyQt6.QtWidgets import (
     QApplication,
     QMainWindow,
-    QSizePolicy,
     QMenu,
     QPlainTextEdit,
     QFrame,
+    QDialog,
     QScrollArea,
     QSplitter,
     QVBoxLayout,
+    QHBoxLayout,
     QGridLayout,
     QLabel,
     QPushButton,
@@ -38,9 +41,38 @@ import render
 
 APP_TITLE = "Curriculum Victim"
 LAST_USED_SETTINGS = "settings/last_used.json"
+LAST_USED_CONFIG = "config/last_used.json"
 
 # For validating input
 SAFE_LATEX = QRegularExpression(r"[^\\~#$%^&_{}]*")
+
+
+@dataclasses.dataclass
+class Config:
+    # editor
+    editor_font: str = "Consolas"
+    editor_font_size: int = 12
+    editor_wrap_lines: bool = True
+
+    # console
+    console_font: str = "Consolas"
+    console_font_size: int = 10
+    console_wrap_lines: bool = True
+
+    # file system
+    default_open_dir: str = ""
+    default_save_dir: str = ""
+    default_output_dir: str = ""
+    open_pdf_when_done: bool = True
+
+    @classmethod
+    def from_json(cls, filepath: str) -> "Config":
+        with open(filepath, encoding="utf-8") as f:
+            return cls(**json.load(f))
+
+    def to_json(self, filepath: str, indent=4):
+        with open(filepath, "w", encoding="utf-8") as f:
+            json.dump(dataclasses.asdict(self), f, indent=indent)
 
 
 class MainWindow(QMainWindow):
@@ -48,6 +80,7 @@ class MainWindow(QMainWindow):
         super().__init__()
 
         self._filepath = ""
+        self._config = self._get_config()
         self.menubar = self.menuBar()
 
         # Main widget
@@ -96,20 +129,16 @@ class MainWindow(QMainWindow):
         button_frame.setLayout(button_frame_layout)
 
         parse_button = QPushButton("Parse", self)
-        parse_button.clicked.connect(self.show_parsed)
+        parse_button.clicked.connect(self.show_parse_tree)
         parse_button.setToolTip("Show the parse tree in the log window")
         button_frame_layout.addWidget(parse_button, 0, 0)
         self.run_button = QPushButton("Run LaTeX", self)
         self.run_button.clicked.connect(self.run_latex)
         button_frame_layout.addWidget(self.run_button, 0, 1)
 
-        # Create menu actions
+        # Populate menus; update UI
         self._create_menu()
-
-        # TODO UI preferences
-        self.editor.setFont(QFont("Consolas", pointSize=12))
-        self.console.setFont(QFont("Consolas", pointSize=10))
-        # TODO line wrap
+        self._update_ui_with_config()
 
         # Set window properties
         self.setGeometry(200, 100, 1000, 660)
@@ -119,10 +148,18 @@ class MainWindow(QMainWindow):
         self.new_file()
         self._load_initial_settings()
 
+    def _get_config(self):
+        try:
+            config = Config.from_json(LAST_USED_CONFIG)
+        except FileNotFoundError:
+            config = Config()
+        return config
+
     def _create_menu(self):
         # File menu
         file_menu = QMenu("&File", self)
         file_menu.setToolTipsVisible(True)
+        self.menubar.addMenu(file_menu)
 
         new_action = QAction("&New", self)
         new_action.triggered.connect(self.new_file)
@@ -166,11 +203,10 @@ class MainWindow(QMainWindow):
         quit_action.setShortcut(QKeySequence("Ctrl+q"))
         file_menu.addAction(quit_action)
 
-        self.menubar.addMenu(file_menu)
-
         # Edit menu
         edit_menu = QMenu("&Edit", self)
         edit_menu.setToolTipsVisible(True)
+        self.menubar.addMenu(edit_menu)
 
         undo_action = QAction("&Undo", self)
         undo_action.triggered.connect(self.editor.undo)
@@ -249,28 +285,13 @@ class MainWindow(QMainWindow):
         insert_award_action.setShortcut(QKeySequence("Ctrl+Shift+w"))
         edit_menu.addAction(insert_award_action)
 
-        edit_menu.addSeparator()
-
-        toggle_wrap_action = QAction("&Wrap Lines", self)
-        toggle_wrap_action.triggered.connect(self.toggle_wrap)
-        toggle_wrap_action.setShortcut(QKeySequence("Alt+z"))
-        toggle_wrap_action.setCheckable(True)
-        toggle_wrap_action.setChecked(True)
-        edit_menu.addAction(toggle_wrap_action)
-
-        preferences_action = QAction("&Preferences...", self)
-        preferences_action.triggered.connect(self.launch_pref_dialog)
-        preferences_action.setShortcut(QKeySequence("Ctrl+,"))
-        edit_menu.addAction(preferences_action)
-
-        self.menubar.addMenu(edit_menu)
-
         # LaTeX menu
         latex_menu = QMenu("La&TeX", self)
         latex_menu.setToolTipsVisible(True)
+        self.menubar.addMenu(latex_menu)
 
         parse_action = QAction("&Parse", self)
-        parse_action.triggered.connect(self.show_parsed)
+        parse_action.triggered.connect(self.show_parse_tree)
         parse_action.setShortcut(QKeySequence("Ctrl+`"))
         parse_action.setToolTip("Show the parse tree in the log window")
         latex_menu.addAction(parse_action)
@@ -285,11 +306,13 @@ class MainWindow(QMainWindow):
         import_settings_action = QAction("&Import Settings...", self)
         import_settings_action.triggered.connect(self.import_settings)
         import_settings_action.setShortcut(QKeySequence("Ctrl+i"))
+        import_settings_action.setToolTip("Load LaTeX settings from a file")
         latex_menu.addAction(import_settings_action)
 
         export_settings_action = QAction("&Export Settings...", self)
         export_settings_action.triggered.connect(self.export_settings)
         export_settings_action.setShortcut(QKeySequence("Ctrl+e"))
+        export_settings_action.setToolTip("Save current LaTeX settings to a file")
         latex_menu.addAction(export_settings_action)
 
         restore_default_action = QAction("Restore &Default", self)
@@ -297,7 +320,55 @@ class MainWindow(QMainWindow):
         restore_default_action.setShortcut(QKeySequence("Ctrl+Shift+d"))
         latex_menu.addAction(restore_default_action)
 
-        self.menubar.addMenu(latex_menu)
+        # Options menu
+        options_menu = QMenu("&Options", self)
+        options_menu.setToolTipsVisible(True)
+        self.menubar.addMenu(options_menu)
+
+        zoom_in_action = QAction("Zoom &In", self)
+        zoom_in_action.triggered.connect(self.increment_editor_font_size)
+        zoom_in_action.setShortcut(QKeySequence("Ctrl+="))
+        options_menu.addAction(zoom_in_action)
+
+        zoom_out_action = QAction("Zoom &Out", self)
+        zoom_out_action.triggered.connect(self.decrement_editor_font_size)
+        zoom_out_action.setShortcut(QKeySequence("Ctrl+-"))
+        options_menu.addAction(zoom_out_action)
+
+        options_menu.addSeparator()
+
+        self.toggle_wrap_action = QAction("&Wrap Lines", self)
+        self.toggle_wrap_action.triggered.connect(self.toggle_wrap)
+        self.toggle_wrap_action.setShortcut(QKeySequence("Alt+z"))
+        self.toggle_wrap_action.setCheckable(True)
+        options_menu.addAction(self.toggle_wrap_action)
+
+        options_menu.addSeparator()
+
+        open_config_action = QAction("&More...", self)
+        open_config_action.triggered.connect(self.open_config_window)
+        open_config_action.setShortcut(QKeySequence("Ctrl+,"))
+        options_menu.addAction(open_config_action)
+
+    def _update_ui_with_config(self):
+        # editor
+        editor_font = QFont(self._config.editor_font, self._config.editor_font_size)
+        self.editor.setFont(editor_font)
+        if self._config.editor_wrap_lines:
+            self.editor.setLineWrapMode(QPlainTextEdit.LineWrapMode.WidgetWidth)
+        else:
+            self.editor.setLineWrapMode(QPlainTextEdit.LineWrapMode.NoWrap)
+
+        # console
+        console_font = QFont(self._config.console_font, self._config.console_font_size)
+        self.console.setFont(console_font)
+        if self._config.console_wrap_lines:
+            self.console.setLineWrapMode(QPlainTextEdit.LineWrapMode.WidgetWidth)
+        else:
+            self.console.setLineWrapMode(QPlainTextEdit.LineWrapMode.NoWrap)
+
+        # menu items
+        self.toggle_wrap_action.setChecked(self._config.editor_wrap_lines)
 
     def _load_initial_settings(self):
         try:
@@ -318,15 +389,16 @@ class MainWindow(QMainWindow):
         ):
             event.ignore()
         else:
-            # Save current settings
+            # Save current settings and config
             settings = self.settings_frame.get_settings()
             settings.to_json(LAST_USED_SETTINGS)
+            self._config.to_json(LAST_USED_CONFIG)
             event.accept()
 
     def log(self, message: str):
         self.console.append(message)
 
-    def show_parsed(self):
+    def show_parse_tree(self):
         try:
             cv, unparsed = txtparse.parse(self.editor.toPlainText())
             self.console.setPlainText(cv.to_json())
@@ -389,8 +461,8 @@ class MainWindow(QMainWindow):
             os.remove(f"output.aux")
             os.remove(f"output.log")
             os.remove(f"output.out")
-            # TODO if open_when_done:
-            os.startfile("output.pdf")
+            if self._config.open_pdf_when_done:
+                os.startfile("output.pdf")
         except Exception as e:
             self._handle_exc(e)
 
@@ -398,7 +470,7 @@ class MainWindow(QMainWindow):
         self.log(traceback.format_exc())
         show_error(parent=self, text=f"Oops, something went wrong.\n{e}")
 
-    def update_filepath(self):
+    def _update_filepath(self):
         if self._filepath:
             filename = os.path.basename(self._filepath)
         else:
@@ -412,13 +484,13 @@ class MainWindow(QMainWindow):
     def new_file(self):
         self.editor.setPlainText(txtparse.MODEL_CV)
         self._filepath = ""
-        self.update_filepath()
+        self._update_filepath()
         self.setWindowModified(False)
 
     def new_blank_file(self):
         self.editor.setPlainText("")
         self._filepath = ""
-        self.update_filepath()
+        self._update_filepath()
         self.setWindowModified(False)
 
     def _open_file(self, filepath: str):
@@ -433,9 +505,9 @@ class MainWindow(QMainWindow):
             self.editor.setPlainText(text)
             self.setWindowModified(False)
             self._filepath = filepath
-            self.update_filepath()
+            self._update_filepath()
             # show the parsed json in the console
-            self.show_parsed()
+            self.show_parse_tree()
 
     def open_file(self):
         # TODO last opened dir
@@ -474,7 +546,7 @@ class MainWindow(QMainWindow):
             self._handle_exc(e)
         else:
             self._filepath = filepath
-            self.update_filepath()
+            self._update_filepath()
 
     def insert_activity(self):
         self.editor.insert(txtparse.MODEL_ACTIVITY)
@@ -487,18 +559,6 @@ class MainWindow(QMainWindow):
 
     def insert_award(self):
         self.editor.insert(txtparse.MODEL_AWARD)
-
-    def toggle_wrap(self, state):
-        if state:
-            wrap_mode = QPlainTextEdit.LineWrapMode.WidgetWidth
-        else:
-            wrap_mode = QPlainTextEdit.LineWrapMode.NoWrap
-        self.editor.setLineWrapMode(wrap_mode)
-        self.console.setLineWrapMode(wrap_mode)
-
-    def launch_pref_dialog(self):
-        # TODO
-        print("open preferences dialog")
 
     def import_settings(self):
         filepath, _ = QFileDialog.getOpenFileName(
@@ -526,6 +586,97 @@ class MainWindow(QMainWindow):
 
     def restore_default(self):
         self.settings_frame.load_settings(render.Settings())
+
+    def increment_editor_font_size(self):
+        self._config.editor_font_size += 1
+        self._update_ui_with_config()
+
+    def decrement_editor_font_size(self):
+        if self._config.editor_font_size > 9:  # min size = 8
+            self._config.editor_font_size -= 1
+            self._update_ui_with_config()
+
+    def toggle_wrap(self, state: bool):
+        self._config.editor_wrap_lines = state
+        self._config.console_wrap_lines = state
+        self._update_ui_with_config()
+
+    def open_config_window(self):
+        w = ConfigDialog(self)
+        w.setWindowTitle("Options")
+        w.load_config(self._config)
+
+        def _get_config():
+            self._config = w.get_config()
+            self._update_ui_with_config()
+            w.close()
+
+        w.ok_button.clicked.connect(_get_config)
+        w.exec()
+
+
+class ConfigDialog(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        layout = QVBoxLayout()
+        self.setLayout(layout)
+        space_after_group = 20
+        space_within_group = 5
+
+        layout.addWidget(SettingsHeading("Editor Font"))
+        self.editor_font_selector = QFontComboBox(self)
+        layout.addWidget(self.editor_font_selector)
+        self.editor_font_size_selector = QSpinBox(self, minimum=8, suffix=" pt")
+        layout.addWidget(self.editor_font_size_selector)
+        layout.addSpacing(space_within_group)
+
+        self.editor_wrap_check = QCheckBox("Wrap lines", self)
+        layout.addWidget(self.editor_wrap_check)
+
+        layout.addSpacing(space_after_group)
+
+        layout.addWidget(SettingsHeading("Log Window Font"))
+        self.console_font_selector = QFontComboBox(self)
+        layout.addWidget(self.console_font_selector)
+        self.console_font_size_selector = QSpinBox(self, minimum=8, suffix=" pt")
+        layout.addWidget(self.console_font_size_selector)
+        layout.addSpacing(space_within_group)
+
+        self.console_wrap_check = QCheckBox("Wrap lines", self)
+        layout.addWidget(self.console_wrap_check)
+
+        layout.addSpacing(space_after_group)
+
+        button_frame = QFrame(self)
+        layout.addWidget(button_frame)
+        button_frame_layout = QHBoxLayout()
+        button_frame.setLayout(button_frame_layout)
+
+        cancel_button = QPushButton("Cancel", self)
+        cancel_button.clicked.connect(self.close)
+        button_frame_layout.addWidget(cancel_button)
+
+        self.ok_button = QPushButton("OK", self)
+        button_frame_layout.addWidget(self.ok_button)
+
+    def get_config(self) -> Config:
+        c = Config()
+        c.editor_font = self.editor_font_selector.currentFont().family()
+        c.editor_font_size = self.editor_font_size_selector.value()
+        c.editor_wrap_lines = self.editor_wrap_check.isChecked()
+        c.console_font = self.console_font_selector.currentFont().family()
+        c.console_font_size = self.console_font_size_selector.value()
+        c.console_wrap_lines = self.console_wrap_check.isChecked()
+        return c
+
+    def load_config(self, config: Config):
+        self.editor_font_selector.setCurrentFont(QFont(config.editor_font))
+        self.editor_font_size_selector.setValue(config.editor_font_size)
+        self.editor_wrap_check.setChecked(config.editor_wrap_lines)
+        self.console_font_selector.setCurrentFont(QFont(config.console_font))
+        self.console_font_size_selector.setValue(config.console_font_size)
+        self.console_wrap_check.setChecked(config.console_wrap_lines)
 
 
 class SettingsFrame(QFrame):

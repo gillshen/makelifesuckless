@@ -76,13 +76,11 @@ class Settings:
     @classmethod
     def from_json(cls, filepath: str) -> "Settings":
         with open(filepath, encoding="utf-8") as f:
-            data = json.load(f)
-        return cls(**data)
+            return cls(**json.load(f))
 
     def to_json(self, filepath: str, indent=4):
-        data = dataclasses.asdict(self)
         with open(filepath, "w", encoding="utf-8") as f:
-            json.dump(data, f, indent=indent)
+            json.dump(dataclasses.asdict(self), f, indent=indent)
 
 
 def render(*, template_path: str, cv: CV, settings: Settings):
