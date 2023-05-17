@@ -33,8 +33,8 @@ from PyQt6.QtWidgets import (
     QMessageBox,
 )
 
-from render import Settings, render
-from txtparse import SmartDate, parse
+import txtparse
+import render
 
 APP_TITLE = "Curriculum Victim"
 LAST_USED_SETTINGS = "settings/last_used.json"
@@ -59,7 +59,7 @@ class MainWindow(QMainWindow):
         central_widget.addWidget(editor_panel)
 
         # Editor
-        self.editor = QPlainTextEdit(self)
+        self.editor = CvEditor(self)
         self.editor.setFrameShape(QFrame.Shape.NoFrame)
         self.document = self.editor.document()
         self.document.setDocumentMargin(6)
@@ -95,8 +95,9 @@ class MainWindow(QMainWindow):
         button_frame_layout = QGridLayout()
         button_frame.setLayout(button_frame_layout)
 
-        parse_button = QPushButton("Parse Source", self)
+        parse_button = QPushButton("Parse", self)
         parse_button.clicked.connect(self.show_parsed)
+        parse_button.setToolTip("Show the parse tree in the log window")
         button_frame_layout.addWidget(parse_button, 0, 0)
         self.run_button = QPushButton("Run LaTeX", self)
         self.run_button.clicked.connect(self.run_latex)
@@ -121,11 +122,17 @@ class MainWindow(QMainWindow):
     def _create_menu(self):
         # File menu
         file_menu = QMenu("&File", self)
+        file_menu.setToolTipsVisible(True)
 
         new_action = QAction("&New", self)
         new_action.triggered.connect(self.new_file)
         new_action.setShortcut(QKeySequence("Ctrl+n"))
         file_menu.addAction(new_action)
+
+        new_blank_action = QAction("New &Blank", self)
+        new_blank_action.triggered.connect(self.new_blank_file)
+        new_blank_action.setShortcut(QKeySequence("Ctrl+Shift+n"))
+        file_menu.addAction(new_blank_action)
 
         file_menu.addSeparator()
 
@@ -137,6 +144,7 @@ class MainWindow(QMainWindow):
         reload_action = QAction("&Reload", self)
         reload_action.triggered.connect(self.reload_file)
         reload_action.setShortcut(QKeySequence("F5"))
+        reload_action.setToolTip("Reload the current file from disk")
         file_menu.addAction(reload_action)
 
         file_menu.addSeparator()
@@ -162,6 +170,7 @@ class MainWindow(QMainWindow):
 
         # Edit menu
         edit_menu = QMenu("&Edit", self)
+        edit_menu.setToolTipsVisible(True)
 
         undo_action = QAction("&Undo", self)
         undo_action.triggered.connect(self.editor.undo)
@@ -192,23 +201,57 @@ class MainWindow(QMainWindow):
 
         edit_menu.addSeparator()
 
-        find_action = QAction("&Find", self)
+        select_all_action = QAction("Select &All", self)
+        select_all_action.triggered.connect(self.editor.selectAll)
+        select_all_action.setShortcut(QKeySequence("Ctrl+a"))
+        edit_menu.addAction(select_all_action)
+
+        goto_action = QAction("&Go to Line...", self)
+        # TODO
+        goto_action.triggered.connect(lambda: print("editor.goto_line"))
+        goto_action.setDisabled(True)
+        goto_action.setShortcut(QKeySequence("Ctrl+g"))
+        edit_menu.addAction(goto_action)
+
+        find_action = QAction("&Find...", self)
         # TODO
         find_action.triggered.connect(lambda: print("editor.find"))
         find_action.setDisabled(True)
         find_action.setShortcut(QKeySequence("Ctrl+f"))
         edit_menu.addAction(find_action)
 
-        replace_action = QAction("&Replace", self)
+        replace_action = QAction("&Replace...", self)
         # TODO
         replace_action.triggered.connect(lambda: print("editor.replace"))
         replace_action.setDisabled(True)
-        replace_action.setShortcut(QKeySequence("Ctrl+r"))
+        replace_action.setShortcut(QKeySequence("Ctrl+h"))
         edit_menu.addAction(replace_action)
 
         edit_menu.addSeparator()
 
-        toggle_wrap_action = QAction("Wrap Lines", self)
+        insert_activity_action = QAction("Insert &Activity", self)
+        insert_activity_action.triggered.connect(self.insert_activity)
+        insert_activity_action.setShortcut(QKeySequence("Ctrl+Shift+a"))
+        edit_menu.addAction(insert_activity_action)
+
+        insert_edu_action = QAction("Insert &Education", self)
+        insert_edu_action.triggered.connect(self.insert_education)
+        insert_edu_action.setShortcut(QKeySequence("Ctrl+Shift+e"))
+        edit_menu.addAction(insert_edu_action)
+
+        insert_skillset_action = QAction("Insert S&killset", self)
+        insert_skillset_action.triggered.connect(self.insert_skillset)
+        insert_skillset_action.setShortcut(QKeySequence("Ctrl+Shift+k"))
+        edit_menu.addAction(insert_skillset_action)
+
+        insert_award_action = QAction("Insert A&ward", self)
+        insert_award_action.triggered.connect(self.insert_award)
+        insert_award_action.setShortcut(QKeySequence("Ctrl+Shift+w"))
+        edit_menu.addAction(insert_award_action)
+
+        edit_menu.addSeparator()
+
+        toggle_wrap_action = QAction("&Wrap Lines", self)
         toggle_wrap_action.triggered.connect(self.toggle_wrap)
         toggle_wrap_action.setShortcut(QKeySequence("Alt+z"))
         toggle_wrap_action.setCheckable(True)
@@ -224,10 +267,12 @@ class MainWindow(QMainWindow):
 
         # LaTeX menu
         latex_menu = QMenu("La&TeX", self)
+        latex_menu.setToolTipsVisible(True)
 
-        parse_action = QAction("&Parse Source", self)
+        parse_action = QAction("&Parse", self)
         parse_action.triggered.connect(self.show_parsed)
         parse_action.setShortcut(QKeySequence("Ctrl+`"))
+        parse_action.setToolTip("Show the parse tree in the log window")
         latex_menu.addAction(parse_action)
 
         self.run_latex_action = QAction("&Run LaTeX", self)
@@ -256,16 +301,16 @@ class MainWindow(QMainWindow):
 
     def _load_initial_settings(self):
         try:
-            initial_settings = Settings.from_json(LAST_USED_SETTINGS)
+            initial_settings = render.Settings.from_json(LAST_USED_SETTINGS)
         except FileNotFoundError:
-            initial_settings = Settings()
+            initial_settings = render.Settings()
         self.settings_frame.load_settings(initial_settings)
 
     def closeEvent(self, event: QCloseEvent):
         # Ask user to handle unsaved change if any
         if self.isWindowModified() and not _ask_yesno(
             parent=self,
-            default_yes=False,
+            default_yes=True,
             text=(
                 "Your document has unsaved changes.\n"
                 "Discard the changes and close the program?"
@@ -283,7 +328,7 @@ class MainWindow(QMainWindow):
 
     def show_parsed(self):
         try:
-            cv, unparsed = parse(self.editor.toPlainText())
+            cv, unparsed = txtparse.parse(self.editor.toPlainText())
             self.console.setPlainText(cv.to_json())
         except Exception as e:
             self._handle_exc(e)
@@ -303,9 +348,11 @@ class MainWindow(QMainWindow):
             template_path = "templates/classic.tex"
             tex_path = "output.tex"
 
-            cv, _ = parse(self.editor.toPlainText())
+            cv, _ = txtparse.parse(self.editor.toPlainText())
             settings = self.settings_frame.get_settings()
-            rendered = render(template_path=template_path, cv=cv, settings=settings)
+            rendered = render.render(
+                template_path=template_path, cv=cv, settings=settings
+            )
             with open(tex_path, "w", encoding="utf-8") as tex_file:
                 tex_file.write(rendered)
 
@@ -363,9 +410,16 @@ class MainWindow(QMainWindow):
         self.setWindowModified(self.document.isModified())
 
     def new_file(self):
+        self.editor.setPlainText(txtparse.MODEL_CV)
+        self._filepath = ""
+        self.update_filepath()
+        self.setWindowModified(False)
+
+    def new_blank_file(self):
         self.editor.setPlainText("")
         self._filepath = ""
         self.update_filepath()
+        self.setWindowModified(False)
 
     def _open_file(self, filepath: str):
         if not filepath:
@@ -422,6 +476,18 @@ class MainWindow(QMainWindow):
             self._filepath = filepath
             self.update_filepath()
 
+    def insert_activity(self):
+        self.editor.insert(txtparse.MODEL_ACTIVITY)
+
+    def insert_education(self):
+        self.editor.insert(txtparse.MODEL_EDUCATION)
+
+    def insert_skillset(self):
+        self.editor.insert(txtparse.MODEL_SKILLSET)
+
+    def insert_award(self):
+        self.editor.insert(txtparse.MODEL_AWARD)
+
     def toggle_wrap(self, state):
         if state:
             wrap_mode = QPlainTextEdit.LineWrapMode.WidgetWidth
@@ -443,7 +509,7 @@ class MainWindow(QMainWindow):
         )
         if not filepath:
             return
-        settings = Settings.from_json(filepath=filepath)
+        settings = render.Settings.from_json(filepath=filepath)
         self.settings_frame.load_settings(settings)
 
     def export_settings(self):
@@ -459,7 +525,7 @@ class MainWindow(QMainWindow):
         settings.to_json(filepath=filepath)
 
     def restore_default(self):
-        self.settings_frame.load_settings(Settings())
+        self.settings_frame.load_settings(render.Settings())
 
 
 class SettingsFrame(QFrame):
@@ -667,8 +733,8 @@ class SettingsFrame(QFrame):
 
         self.color_links_check.stateChanged.connect(_update_url_color_selector)
 
-    def get_settings(self) -> Settings:
-        s = Settings()
+    def get_settings(self) -> render.Settings:
+        s = render.Settings()
 
         s.show_activity_locations = self.activity_location_check.isChecked()
         s.show_time_commitments = self.time_commitment_check.isChecked()
@@ -722,7 +788,7 @@ class SettingsFrame(QFrame):
 
         return s
 
-    def load_settings(self, s: Settings):
+    def load_settings(self, s: render.Settings):
         self.activity_location_check.setChecked(s.show_activity_locations)
         self.time_commitment_check.setChecked(s.show_time_commitments)
 
@@ -848,7 +914,7 @@ class LatexColorSelector(QComboBox):
 
 
 class DateFormatSelector(QComboBox):
-    _sample_date = SmartDate(year=2022, month=11, day=1)
+    _sample_date = txtparse.SmartDate(year=2022, month=11, day=1)
     _sample_to_style = {}
     for style in [
         "american",
@@ -882,6 +948,14 @@ class Separator(QFrame):
         super().__init__(parent)
         self.setFrameShape(QFrame.Shape.HLine)
         self.setFrameShadow(QFrame.Shadow.Sunken)
+
+
+class CvEditor(QPlainTextEdit):
+    # supports auto-scrolling
+
+    def insert(self, text: str):
+        self.insertPlainText(text)
+        self.ensureCursorVisible()
 
 
 class Console(QPlainTextEdit):

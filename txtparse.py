@@ -51,6 +51,68 @@ SKILLSET_NAME = _compile(r"skillset\s+name")
 SKILLS = _compile("skills")
 
 
+# Model files
+MODEL_EDUCATION = """
+School: 
+Loc: 
+Start Date: yyyy-mm
+End Date: yyyy-mm
+Degree: 
+Major: 
+Minor: 
+GPA: 
+Courses: 
+"""
+
+MODEL_ACTIVITY = """
+Role: 
+Org: 
+Loc: 
+Start Date: yyyy-mm
+End Date: yyyy-mm
+Hours per Week: 
+Weeks per Year: 
+- [description]
+- [description]
+"""
+
+MODEL_AWARD = """
+Award: 
+Award Date: yyyy-mm
+"""
+
+MODEL_SKILLSET = """
+Skillset Name: 
+Skills: 
+"""
+
+MODEL_CV = re.sub(
+    "\n{3,}",
+    "\n\n",
+    f"""\
+Name: 
+Email: 
+Phone: 
+Address: 
+Website: 
+
+{MODEL_EDUCATION}
+
+{MODEL_AWARD}
+
+{MODEL_SKILLSET}
+
+# Research Experience [change as appropriate]
+
+{MODEL_ACTIVITY}
+
+# Work Experience [change as appropriate]
+
+{MODEL_ACTIVITY}
+""",
+)
+
+
 @dataclasses.dataclass
 class SmartDate:
     year: int = None
