@@ -109,7 +109,7 @@ role: zzz
 
 #### 斜体，粗体，链接，特殊字符
 
-源文件是纯文本，要实现斜体等格式，需要使用一点特殊的语法（模仿Markdown，也支持多数LaTeX语法，不详细介绍）。常用的罗列如下：
+源文件是纯文本，要实现斜体等格式，需要一些额外动作（模仿Markdown语法，也支持多数LaTeX语法，不详细介绍）。常用的罗列如下：
 
 || 源文件 | 编译结果 |
 | - | ------ | -------- |
@@ -122,8 +122,9 @@ role: zzz
 | [En dash](https://www.merriam-webster.com/words-at-play/em-dash-en-dash-how-to-use) | `--`或字符本身 | – |
 | 左花括号 | `\{` | { |
 | 右花括号 | `\}` | } |
+| 右斜杠 | `\textbackslash{}` | \ |
 
-**左右花括号在LaTeX中是特殊字符，不加`\`直接输入可能会导致编译失败。**
+**`\`, `{`和`}`在LaTeX中是特殊字符，不按以上方式输入可能会导致编译失败。**
 
 此外，直引号会自动转换为[适当的弯引号](https://typographyforlawyers.com/straight-and-curly-quotes.html)。
 
