@@ -398,9 +398,11 @@ def _preprocess(line: str):
     line = re.sub(r"(^|\s)'", r"\1`", line)
 
     # bold and italic
-    while line.count("*") > 1:
-        line = re.sub(r"\*\*((?:[^*]|\*[^*])*?)\*\*", r"\\textbf{\1}", line)
-        line = re.sub(r"\*([^*]*?)\*", r"\\emph{\1}", line)
+    passes = 0
+    while line.count("*") and passes < 3:
+        line = re.sub(r"\*\*([^*]+?)\*\*", r"\\textbf{\1}", line)
+        line = re.sub(r"\*([^*]+?)\*", r"\\emph{\1}", line)
+        passes += 1
 
     # url
     line = re.sub(r"\[(.+?)\]\((.+?)\)", r"\\href{\2}{\1}", line)
