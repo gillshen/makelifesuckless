@@ -142,6 +142,10 @@ role: zzz
 - **Number Style** - [详细](https://www.monotype.com/resources/expertise/how-use-figure-styles-illustrator)（某些字体不支持，但不会导致编译失败）
 - **Paper Size** - 有A4和Letter两种
 - **Margins** - 页边距
+- **Line Height** - 行距，1.0=单倍，2.0=双倍，etc.
+- **Space Between Paragraphs** - 段落间距（如考试/奖项/技能集之间的间距）
+- **Space Between Entries** - 活动之间/教育经历之间的间距
+- **Space Before Section Titles**, **Space After Section Titles** - 顾名思义，小标题和前后文字的间距
 - **Section Title Style** - 决定小标题是否加粗，是否全大写
 - **Default Activities Section Title** - 活动的默认分类名（如已自定义分类，此设定无效）
 - **Awards Section Title**, **Skills Section Title** - 奖项和技能模块的小标题
