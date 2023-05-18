@@ -1,5 +1,6 @@
 import dataclasses
 import json
+import re
 
 import jinja2
 
@@ -82,9 +83,30 @@ class Settings:
         with open(filepath, "w", encoding="utf-8") as f:
             json.dump(dataclasses.asdict(self), f, indent=indent)
 
+    def __setattr__(self, attr, value):
+        if attr in [
+            "default_activities_section_title",
+            "awards_section_title",
+            "skills_section_title",
+        ]:
+            value = sanitize_headings(value)
+        super().__setattr__(attr, value)
+
 
 def render(*, template_path: str, cv: CV, settings: Settings):
     with open(template_path, encoding="utf-8") as template_file:
         template_str = template_file.read()
     template = ENVIRONMENT.from_string(template_str)
     return template.render(cv=cv, settings=settings)
+
+
+# An abridged version of txtparse._preprocess
+def sanitize_headings(s: str):
+    # escape special characters `_`, `$`, '%', and `&`
+    s = re.sub("([_$%&])", r"\\\1", s)
+
+    # preserve `^` and escaped `*`
+    s = s.replace("^", "\\^{}")
+    s = s.replace("\\*", '{\\char"002A}')
+
+    return s
