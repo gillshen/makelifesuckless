@@ -9,6 +9,8 @@ from PyQt6.QtGui import (
     QAction,
     QKeySequence,
     QFont,
+    QColor,
+    QPalette,
     QCloseEvent,
     QRegularExpressionValidator,
 )
@@ -34,6 +36,7 @@ from PyQt6.QtWidgets import (
     QLineEdit,
     QFileDialog,
     QMessageBox,
+    QColorDialog,
 )
 
 import txtparse
@@ -52,11 +55,15 @@ class Config:
     # editor
     editor_font: str = "Consolas"
     editor_font_size: int = 12
+    editor_foreground: str = "#000000"
+    editor_background: str = "#ffffff"
     editor_wrap_lines: bool = True
 
     # console
     console_font: str = "Consolas"
     console_font_size: int = 10
+    console_foreground: str = "#205e80"
+    console_background: str = "#f7f7f7"
     console_wrap_lines: bool = True
 
     # file system
@@ -356,7 +363,7 @@ class MainWindow(QMainWindow):
         options_menu.addAction(open_config_action)
 
     def _update_ui_with_config(self):
-        # editor
+        # editor font and line wrap
         editor_font = QFont(self._config.editor_font, self._config.editor_font_size)
         self.editor.setFont(editor_font)
         if self._config.editor_wrap_lines:
@@ -364,13 +371,41 @@ class MainWindow(QMainWindow):
         else:
             self.editor.setLineWrapMode(QPlainTextEdit.LineWrapMode.NoWrap)
 
-        # console
+        # editor foreground & background
+        editor_palette = self.editor.palette()
+        editor_palette.setColor(
+            QPalette.ColorGroup.Normal,
+            QPalette.ColorRole.Base,
+            QColor(self._config.editor_background),
+        )
+        editor_palette.setColor(
+            QPalette.ColorGroup.Normal,
+            QPalette.ColorRole.Text,
+            QColor(self._config.editor_foreground),
+        )
+        self.editor.setPalette(editor_palette)
+
+        # console font and line wrap
         console_font = QFont(self._config.console_font, self._config.console_font_size)
         self.console.setFont(console_font)
         if self._config.console_wrap_lines:
             self.console.setLineWrapMode(QPlainTextEdit.LineWrapMode.WidgetWidth)
         else:
             self.console.setLineWrapMode(QPlainTextEdit.LineWrapMode.NoWrap)
+
+        # console foreground & background
+        console_palette = self.console.palette()
+        console_palette.setColor(
+            QPalette.ColorGroup.Normal,
+            QPalette.ColorRole.Base,
+            QColor(self._config.console_background),
+        )
+        console_palette.setColor(
+            QPalette.ColorGroup.Normal,
+            QPalette.ColorRole.Text,
+            QColor(self._config.console_foreground),
+        )
+        self.console.setPalette(console_palette)
 
         # menu items
         self.toggle_wrap_action.setChecked(self._config.editor_wrap_lines)
