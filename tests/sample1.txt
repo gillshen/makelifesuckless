@@ -8,7 +8,7 @@ loc: Amsterdam, The Netherlands
 degree: Master in Mathematics & Computer Science
 start date: 1981
 end date: 1982
-gpa: unknown
+gpa: \textsc{unknown}
 
 school: University of Amsterdam
 loc: Amsterdam, The Netherlands

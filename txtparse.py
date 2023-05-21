@@ -297,7 +297,9 @@ def parse(src: str) -> tuple[CV, list[str]]:
     curren_data_object = None
     current_section = ""
 
-    for line in map(_preprocess, src.splitlines()):
+    for line in src.splitlines():
+        line = re.sub(r"\s+", " ", line).strip()
+
         if not line:
             continue
 
@@ -375,39 +377,6 @@ def parse(src: str) -> tuple[CV, list[str]]:
             raise ParsingError(f"Unparsable line: {line!r}\n{e}")
 
     return cv, unparsed
-
-
-def _preprocess(line: str):
-    # preserve the leading `#` if any and escape other `#`s
-    line = re.sub(r"^\s*#", "\uffff", line)
-    line = line.replace("#", "\\#").replace("\uffff", "#")
-
-    # protect % sign (latex comments not allowed as a result)
-    # escape special characters `_`, `$`, and `&`
-    line = re.sub("([_$%&])", r"\\\1", line)
-
-    # preserve `^` and escaped `*`
-    line = line.replace("^", "\\^{}")
-    line = line.replace("\\*", '{\\char"002A}')
-
-    # remove excessive whitespace
-    line = re.sub(r"\s+", " ", line).strip()
-
-    # correct quotes
-    line = re.sub(r'(^|\s)"', r"\1``", line)
-    line = re.sub(r"(^|\s)'", r"\1`", line)
-
-    # bold and italic
-    passes = 0
-    while line.count("*") and passes < 3:
-        line = re.sub(r"\*\*([^*]+?)\*\*", r"\\textbf{\1}", line)
-        line = re.sub(r"\*([^*]+?)\*", r"\\emph{\1}", line)
-        passes += 1
-
-    # url
-    line = re.sub(r"\[(.+?)\]\((.+?)\)", r"\\href{\2}{\1}", line)
-
-    return line
 
 
 def _match(compiled_pattern: re.Pattern, text: str):

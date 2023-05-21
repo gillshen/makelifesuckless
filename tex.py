@@ -83,15 +83,6 @@ class Settings:
         with open(filepath, "w", encoding="utf-8") as f:
             json.dump(dataclasses.asdict(self), f, indent=indent)
 
-    def __setattr__(self, attr, value):
-        if attr in [
-            "default_activities_section_title",
-            "awards_section_title",
-            "skills_section_title",
-        ]:
-            value = sanitize_headings(value)
-        super().__setattr__(attr, value)
-
 
 def render(*, template_path: str, cv: CV, settings: Settings):
     with open(template_path, encoding="utf-8") as template_file:
@@ -100,13 +91,30 @@ def render(*, template_path: str, cv: CV, settings: Settings):
     return template.render(cv=cv, settings=settings)
 
 
-# An abridged version of txtparse._preprocess
-def sanitize_headings(s: str):
-    # escape special characters `_`, `$`, '%', and `&`
-    s = re.sub("([_$%&])", r"\\\1", s)
-
-    # preserve `^` and escaped `*`
-    s = s.replace("^", "\\^{}")
+def to_latex(s: str):
+    # preserve escaped asterisks
     s = s.replace("\\*", '{\\char"002A}')
 
+    # escape `_`, '#', `$`, '%', `&`, '^'
+    s = re.sub("([_#$%&])", r"\\\1", s)
+    s = s.replace("^", "\\^{}")
+
+    # correct quotes
+    s = re.sub(r'(^|\s)"', r"\1``", s)
+    s = re.sub(r"(^|\s)'", r"\1`", s)
+
+    # bold and italic
+    passes = 0
+    while s.count("*") and passes < 3:
+        s = re.sub(r"\*\*([^*]+?)\*\*", r"\\textbf{\1}", s)
+        s = re.sub(r"\*([^*]+?)\*", r"\\emph{\1}", s)
+        passes += 1
+
+    # url
+    s = re.sub(r"\[(.+?)\]\((.+?)\)", r"\\href{\2}{\1}", s)
+
     return s
+
+
+# Register filters
+ENVIRONMENT.filters["to_latex"] = to_latex

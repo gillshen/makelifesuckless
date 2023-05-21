@@ -56,12 +56,12 @@
 
 \newcommand{\contactdivide}{%
     \hspace{.5em minus .2em}%
-        \textcolor{lightgray}{<< settings.contact_divider >>}%
+        \textcolor{lightgray}{<< settings.contact_divider|to_latex >>}%
     \hspace{.5em minus .2em}%
 }
 
 \setlist[itemize]{%
-    label={<< settings.bullet_text >>},
+    label={<< settings.bullet_text|to_latex >>},
     leftmargin=*,
     align=left,
     labelindent=<< settings.bullet_indent_in_em >>em,
@@ -136,7 +136,7 @@
     \setmainfont{<< settings.title_font >>}[Numbers={<< var_proportional >>, << var_oldstyle >>}]%
 <!- endif !>
 	\<< settings.title_relative_size >>\bfseries%
-	<< cv.name >>
+	<< cv.name|to_latex >>
 \end{center}
 \addvspace{\postentryskip}
 <!- endif !>
@@ -145,7 +145,7 @@
 <! set website = '\\url{' + cv.website + '}' if cv.website else '' !>
 \begin{center}
 <! for item in [cv.email, cv.phone, cv.address, website] if item -!>
-<! if loop.index0 !>\contactdivide <! endif !><< item >>
+<! if loop.index0 !>\contactdivide <! endif !><< item|to_latex >>
 <!- endfor !>
 \end{center}
 <!- endif !>
@@ -153,33 +153,33 @@
 <! if cv.education or cv.tests -!>
 \section{<< 'Education' if cv.education else 'Tests' >>}
 <! for edu in cv.education !>
-\edu{<< edu.school >>}{%
-    loc={<< edu.loc >>},
+\edu{<< edu.school|to_latex >>}{%
+    loc={<< edu.loc|to_latex >>},
     startdate={<< edu.start_date.to_str(style=settings.date_style, mask=edu.end_date) >>},
     enddate={<< edu.end_date.to_str(style=settings.date_style) >>},
-    degree={<< edu.degree >>},
-    major={<< edu.major >>},
-    minor={<< edu.minor >>},
-    gpa={<< edu.gpa >>},
-    courses={<< edu.courses >>}
+    degree={<< edu.degree|to_latex >>},
+    major={<< edu.major|to_latex >>},
+    minor={<< edu.minor|to_latex >>},
+    gpa={<< edu.gpa|to_latex >>},
+    courses={<< edu.courses|to_latex >>}
 }
 <!- endfor !>
 <! for test in cv.tests !>
-\textbf{<< test.name >>}: << test.score >><! if test.date !> (<< test.date.to_str(style=settings.date_style) >>)<! endif !>
+\textbf{<< test.name|to_latex >>}: << test.score|to_latex >><! if test.date !> (<< test.date.to_str(style=settings.date_style) >>)<! endif !>
 <! endfor !>
 <!- endif !>
 
 <! if cv.awards -!>
-\section{<< settings.awards_section_title >>}
+\section{<< settings.awards_section_title|to_latex >>}
 <! for award in cv.awards !>
-{<! if settings.bold_award_names !>\bfseries <! endif !><< award.name >>}, << award.date.to_str(style=settings.date_style) >>
+{<! if settings.bold_award_names !>\bfseries <! endif !><< award.name|to_latex >>}, << award.date.to_str(style=settings.date_style) >>
 <! endfor !>
 <!- endif !>
 
 <! if cv.skillsets -!>
-\section{<< settings.skills_section_title >>}
+\section{<< settings.skills_section_title|to_latex >>}
 <! for skillset in cv.skillsets !>
-<! if skillset.name !>{<! if settings.bold_skillset_names !>\bfseries <! endif !><< skillset.name >>}: <! endif !><< skillset.skills >>
+<! if skillset.name !>{<! if settings.bold_skillset_names !>\bfseries <! endif !><< skillset.name|to_latex >>}: <! endif !><< skillset.skills|to_latex >>
 <! endfor !>
 <!- endif !>
 
@@ -187,20 +187,20 @@
 <! for section in sections !>
 <! set activities = cv.activities_of_section(section) -!>
 <! if activities -!>
-\section{<< section or settings.default_activities_section_title >>}
+\section{<< section or settings.default_activities_section_title|to_latex >>}
 
 <! for activity in activities !>
 \begin{activity}{%
-    role={<< activity.role >>},
-    org={<< activity.org >>},
-    loc={<< activity.loc >>},
+    role={<< activity.role|to_latex >>},
+    org={<< activity.org|to_latex >>},
+    loc={<< activity.loc|to_latex >>},
     startdate={<< activity.start_date.to_str(style=settings.date_style, mask=activity.end_date) >>},
     enddate={<< activity.end_date.to_str(style=settings.date_style) >>},
-    hoursperweek={<< activity.hours_per_week >>},
-    weeksperyear={<< activity.weeks_per_year >>}
+    hoursperweek={<< activity.hours_per_week|to_latex >>},
+    weeksperyear={<< activity.weeks_per_year|to_latex >>}
 }
 <! for descr in activity.descriptions -!>
-    \item\relax << descr >>
+    \item\relax << descr|to_latex >>
 <! endfor -!>
 \end{activity}
 <! endfor !>

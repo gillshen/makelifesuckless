@@ -4,7 +4,7 @@ import traceback
 import dataclasses
 import json
 
-from PyQt6.QtCore import Qt, QRegularExpression, QProcess
+from PyQt6.QtCore import Qt, QProcess
 from PyQt6.QtGui import (
     QAction,
     QKeySequence,
@@ -12,7 +12,6 @@ from PyQt6.QtGui import (
     QColor,
     QPalette,
     QCloseEvent,
-    QRegularExpressionValidator,
 )
 from PyQt6.QtWidgets import (
     QApplication,
@@ -45,9 +44,6 @@ import tex
 APP_TITLE = "Curriculum Victim"
 LAST_USED_SETTINGS = "settings/last_used.json"
 LAST_USED_CONFIG = "config/last_used.json"
-
-# For validating input
-SAFE_LATEX = QRegularExpression(r"[^\\~#$%^&_{}]*")
 
 
 @dataclasses.dataclass
@@ -185,11 +181,11 @@ class MainWindow(QMainWindow):
         open_action.setShortcut(QKeySequence("Ctrl+o"))
         file_menu.addAction(open_action)
 
-        reload_action = QAction("&Reload", self)
-        reload_action.triggered.connect(self.reload_file)
-        reload_action.setShortcut(QKeySequence("F5"))
-        reload_action.setToolTip("Reload the current file from disk")
-        file_menu.addAction(reload_action)
+        self.reload_action = QAction("&Reload", self)
+        self.reload_action.triggered.connect(self.reload_file)
+        self.reload_action.setShortcut(QKeySequence("F5"))
+        self.reload_action.setDisabled(True)
+        file_menu.addAction(self.reload_action)
 
         file_menu.addSeparator()
 
@@ -297,6 +293,20 @@ class MainWindow(QMainWindow):
         insert_award_action.setShortcut(QKeySequence("Ctrl+Shift+w"))
         edit_menu.addAction(insert_award_action)
 
+        edit_menu.addSeparator()
+
+        ensure_periods_action = QAction("Ensure period endings", self)
+        # TODO
+        ensure_periods_action.triggered.connect(lambda: print("ensure periods"))
+        ensure_periods_action.setShortcut(QKeySequence("Ctrl+/"))
+        edit_menu.addAction(ensure_periods_action)
+
+        strip_periods_action = QAction("Strip ending periods", self)
+        # TODO
+        strip_periods_action.triggered.connect(lambda: print("strip periods"))
+        strip_periods_action.setShortcut(QKeySequence("Ctrl+?"))
+        edit_menu.addAction(strip_periods_action)
+
         # LaTeX menu
         latex_menu = QMenu("La&TeX", self)
         latex_menu.setToolTipsVisible(True)
@@ -308,7 +318,7 @@ class MainWindow(QMainWindow):
         parse_action.setToolTip("Show the parse tree in the log window")
         latex_menu.addAction(parse_action)
 
-        self.run_latex_action = QAction("&Run LaTeX", self)
+        self.run_latex_action = QAction("&Run", self)
         self.run_latex_action.triggered.connect(self.run_latex)
         self.run_latex_action.setShortcut(QKeySequence("Ctrl+Shift+r"))
         latex_menu.addAction(self.run_latex_action)
@@ -330,6 +340,7 @@ class MainWindow(QMainWindow):
         restore_default_action = QAction("Restore &Default", self)
         restore_default_action.triggered.connect(self.restore_default)
         restore_default_action.setShortcut(QKeySequence("Ctrl+Shift+d"))
+        restore_default_action.setToolTip("Restore default LaTeX settings")
         latex_menu.addAction(restore_default_action)
 
         # Options menu
@@ -435,9 +446,6 @@ class MainWindow(QMainWindow):
             self._config.to_json(LAST_USED_CONFIG)
             event.accept()
 
-    def log(self, message: str):
-        self.console.append(message)
-
     def show_parse_tree(self):
         try:
             cv, unparsed = txtparse.parse(self.editor.toPlainText())
@@ -447,9 +455,7 @@ class MainWindow(QMainWindow):
             return
         if unparsed:
             lines = "\n".join(map(repr, unparsed))
-            show_info(
-                parent=self, text=f"Unable to parse the following lines:\n\n{lines}"
-            )
+            show_info(parent=self, text=f"Unable to parse lines:\n\n{lines}")
 
     def run_latex(self):
         self.run_button.setDisabled(True)
@@ -478,41 +484,45 @@ class MainWindow(QMainWindow):
     def _handle_proc_output(self):
         proc = self.sender()
         output = proc.readAllStandardOutput().data().decode()
-        self.log(output)
+        self.console.append(output)
 
     def _handle_proc_finish(self, exit_code, exit_status):
         # re-enable UI
         self.run_button.setDisabled(False)
         self.run_latex_action.setDisabled(False)
+        # clean up
+        silent_remove("output.aux")
+        silent_remove("output.log")
+        silent_remove("output.out")
+        silent_remove("output.synctex(busy)")
+        silent_remove("output.synctex.gz")
 
         # handle errors if any
         if exit_code != 0 or exit_status != QProcess.ExitStatus.NormalExit:
-            show_error(
-                parent=self,
-                text=f"Sorry, something went wrong.\n" f"{exit_code=}, {exit_status=}",
-            )
+            message = f"{exit_code=}, {exit_status=}"
+            show_error(parent=self, text=f"Sorry, something went wrong.\n{message}")
             return
 
-        self.log("Operation completed successfully.")
+        self.console.append("Operation completed successfully.")
         try:
-            # clean up
-            os.remove(f"output.aux")
-            os.remove(f"output.log")
-            os.remove(f"output.out")
             if self._config.open_pdf_when_done:
                 os.startfile("output.pdf")
         except Exception as e:
             self._handle_exc(e)
 
     def _handle_exc(self, e: Exception):
-        self.log(traceback.format_exc())
+        self.console.append(traceback.format_exc())
         show_error(parent=self, text=f"Oops, something went wrong.\n{e}")
 
     def _update_filepath(self):
         if self._filepath:
             filename = os.path.basename(self._filepath)
+            self.reload_action.setDisabled(False)
+            self.reload_action.setText(f"Reload {filename}")
         else:
             filename = "untitled"
+            self.reload_action.setDisabled(True)
+            self.reload_action.setText("Reload")
         self.setWindowTitle(f"{filename}[*] - {APP_TITLE}")
         self.setWindowFilePath(self._filepath)
 
@@ -524,12 +534,14 @@ class MainWindow(QMainWindow):
         self._filepath = ""
         self._update_filepath()
         self.setWindowModified(False)
+        self.console.clear()
 
     def new_blank_file(self):
         self.editor.setPlainText("")
         self._filepath = ""
         self._update_filepath()
         self.setWindowModified(False)
+        self.console.clear()
 
     def _open_file(self, filepath: str):
         try:
@@ -547,7 +559,6 @@ class MainWindow(QMainWindow):
             self.show_parse_tree()
 
     def open_file(self):
-        # TODO last opened dir
         filepath, _ = QFileDialog.getOpenFileName(
             self,
             caption="Open File",
@@ -577,7 +588,6 @@ class MainWindow(QMainWindow):
             self._handle_exc(e)
 
     def save_file_as(self):
-        # TODO last saved dir
         filepath, _ = QFileDialog.getSaveFileName(
             self,
             caption="Save File",
@@ -658,9 +668,13 @@ class MainWindow(QMainWindow):
         w.load_config(self._config)
 
         def _get_config():
-            self._config = w.get_config()
-            self._update_ui_with_config()
-            w.close()
+            try:
+                self._config = w.get_config()
+                self._update_ui_with_config()
+            except Exception as e:
+                self._handle_exc(e)
+            finally:
+                w.close()
 
         w.ok_button.clicked.connect(_get_config)
         w.exec()
@@ -675,7 +689,7 @@ class ConfigDialog(QDialog):
         space_after_group = 20
         space_within_group = 5
 
-        layout.addWidget(SettingsHeading("Editor Font"))
+        layout.addWidget(QLabel("Editor Font"))
         self.editor_font_selector = QFontComboBox(self)
         layout.addWidget(self.editor_font_selector)
         self.editor_font_size_selector = QSpinBox(self, minimum=8, suffix=" pt")
@@ -687,7 +701,7 @@ class ConfigDialog(QDialog):
 
         layout.addSpacing(space_after_group)
 
-        layout.addWidget(SettingsHeading("Log Window Font"))
+        layout.addWidget(QLabel("Log Window Font"))
         self.console_font_selector = QFontComboBox(self)
         layout.addWidget(self.console_font_selector)
         self.console_font_size_selector = QSpinBox(self, minimum=8, suffix=" pt")
@@ -751,7 +765,7 @@ class SettingsFrame(QFrame):
         layout.addSpacing(space_after_separator)
 
         # text font
-        layout.addWidget(SettingsHeading("Text Font"))
+        layout.addWidget(QLabel("Text Font"))
         self.text_font_selector = QFontComboBox(self)
         layout.addWidget(self.text_font_selector)
         self.text_size_selector = QSpinBox(self, minimum=8, maximum=14, suffix=" pt")
@@ -759,7 +773,7 @@ class SettingsFrame(QFrame):
         layout.addSpacing(space_after_group)
 
         # heading font
-        layout.addWidget(SettingsHeading("Heading Font"))
+        layout.addWidget(QLabel("Heading Font"))
         self.heading_font_selector = QFontComboBox(self)
         layout.addWidget(self.heading_font_selector)
         self.heading_size_selector = LatexFontSizeSelector(self)
@@ -767,7 +781,7 @@ class SettingsFrame(QFrame):
         layout.addSpacing(space_after_group)
 
         # title font
-        layout.addWidget(SettingsHeading("Title Font"))
+        layout.addWidget(QLabel("Title Font"))
         self.title_font_selector = QFontComboBox(self)
         layout.addWidget(self.title_font_selector)
         self.title_size_selector = LatexFontSizeSelector(self)
@@ -775,7 +789,7 @@ class SettingsFrame(QFrame):
         layout.addSpacing(space_after_group)
 
         # font features
-        layout.addWidget(SettingsHeading("Number Style"))
+        layout.addWidget(QLabel("Number Style"))
         self.proportional_numbers_check = QCheckBox("Proportional", self)
         layout.addWidget(self.proportional_numbers_check)
         self.oldstyle_numbers_check = QCheckBox("Old Style", self)
@@ -786,13 +800,13 @@ class SettingsFrame(QFrame):
         layout.addSpacing(space_after_separator)
 
         # paper
-        layout.addWidget(SettingsHeading("Paper"))
+        layout.addWidget(QLabel("Paper"))
         self.paper_selector = LatexPaperSelector(self)
         layout.addWidget(self.paper_selector)
         layout.addSpacing(space_after_group)
 
         # margins
-        layout.addWidget(SettingsHeading("Margins"))
+        layout.addWidget(QLabel("Margins"))
         margins_grid = QFrame(self)
         layout.addWidget(margins_grid)
         margins_grid_layout = QGridLayout()
@@ -810,28 +824,28 @@ class SettingsFrame(QFrame):
             margins_grid_layout.addWidget(w, row, 1)
         layout.addSpacing(space_after_group)
 
-        layout.addWidget(SettingsHeading("Line Height"))
+        layout.addWidget(QLabel("Line Height"))
         self.line_spread_selector = QDoubleSpinBox(self)
         self.line_spread_selector.setSingleStep(0.1)
         layout.addWidget(self.line_spread_selector)
         layout.addSpacing(space_within_group)
 
-        layout.addWidget(SettingsHeading("Space Between Paragraphs"))
+        layout.addWidget(QLabel("Space Between Paragraphs"))
         self.paragraph_skip_selector = QSpinBox(self, suffix=" pt")
         layout.addWidget(self.paragraph_skip_selector)
         layout.addSpacing(space_within_group)
 
-        layout.addWidget(SettingsHeading("Space Between Entries"))
+        layout.addWidget(QLabel("Space Between Entries"))
         self.entry_skip_selector = QSpinBox(self, suffix=" pt")
         layout.addWidget(self.entry_skip_selector)
         layout.addSpacing(space_within_group)
 
-        layout.addWidget(SettingsHeading("Space Before Section Titles"))
+        layout.addWidget(QLabel("Space Before Section Titles"))
         self.before_sectitle_skip_selector = QSpinBox(self, suffix=" pt")
         layout.addWidget(self.before_sectitle_skip_selector)
         layout.addSpacing(space_within_group)
 
-        layout.addWidget(SettingsHeading("Space After Section Titles"))
+        layout.addWidget(QLabel("Space After Section Titles"))
         self.after_sectitle_skip_selector = QSpinBox(self, suffix=" pt")
         layout.addWidget(self.after_sectitle_skip_selector)
         layout.addSpacing(space_after_group)
@@ -840,7 +854,7 @@ class SettingsFrame(QFrame):
         layout.addSpacing(space_after_separator)
 
         # headings
-        layout.addWidget(SettingsHeading("Section Title Style"))
+        layout.addWidget(QLabel("Section Title Style"))
         self.bold_headings_check = QCheckBox("Bold", self)
         layout.addWidget(self.bold_headings_check)
         self.all_cap_headings_check = QCheckBox("All Caps", self)
@@ -848,19 +862,19 @@ class SettingsFrame(QFrame):
         layout.addSpacing(space_after_group)
 
         # activities section title
-        layout.addWidget(SettingsHeading("Default Activities Section Title"))
+        layout.addWidget(QLabel("Default Activities Section Title"))
         self.default_activities_title_edit = QLineEdit(self)
         layout.addWidget(self.default_activities_title_edit)
         layout.addSpacing(space_within_group)
 
         # awards section title
-        layout.addWidget(SettingsHeading("Awards Section Title"))
+        layout.addWidget(QLabel("Awards Section Title"))
         self.awards_title_edit = QLineEdit(self)
         layout.addWidget(self.awards_title_edit)
         layout.addSpacing(space_within_group)
 
         # skills section title
-        layout.addWidget(SettingsHeading("Skills Section Title"))
+        layout.addWidget(QLabel("Skills Section Title"))
         self.skills_title_edit = QLineEdit(self)
         layout.addWidget(self.skills_title_edit)
         layout.addSpacing(space_after_group)
@@ -875,29 +889,25 @@ class SettingsFrame(QFrame):
         layout.addSpacing(space_after_separator)
 
         # contact divider
-        layout.addWidget(SettingsHeading("Contact Divider"))
+        layout.addWidget(QLabel("Contact Divider"))
         self.contact_divider_edit = QLineEdit(self)
-        validator = QRegularExpressionValidator(SAFE_LATEX, self.contact_divider_edit)
-        self.contact_divider_edit.setValidator(validator)
         layout.addWidget(self.contact_divider_edit)
         layout.addSpacing(space_after_group)
 
         # bullet appearance
-        layout.addWidget(SettingsHeading("Bullet Text"))
+        layout.addWidget(QLabel("Bullet Text"))
         self.bullet_text_edit = QLineEdit(self)
-        validator = QRegularExpressionValidator(SAFE_LATEX, self.bullet_text_edit)
-        self.bullet_text_edit.setValidator(validator)
         layout.addWidget(self.bullet_text_edit)
         layout.addSpacing(space_within_group)
 
-        layout.addWidget(SettingsHeading("Bullet Indent"))
+        layout.addWidget(QLabel("Bullet Indent"))
         self.bullet_indent_selector = QDoubleSpinBox(self, suffix=" em")
         self.bullet_indent_selector.setSingleStep(0.1)
         self.bullet_indent_selector.setDecimals(1)
         layout.addWidget(self.bullet_indent_selector)
         layout.addSpacing(space_within_group)
 
-        layout.addWidget(SettingsHeading("Bullet-Item Separation"))
+        layout.addWidget(QLabel("Bullet-Item Separation"))
         self.bullet_item_sep_selector = QDoubleSpinBox(self, suffix=" em")
         self.bullet_item_sep_selector.setSingleStep(0.1)
         self.bullet_item_sep_selector.setDecimals(1)
@@ -908,7 +918,7 @@ class SettingsFrame(QFrame):
         layout.addSpacing(space_after_separator)
 
         # date format
-        layout.addWidget(SettingsHeading("Date Format"))
+        layout.addWidget(QLabel("Date Format"))
         self.date_style_selector = DateFormatSelector(self)
         layout.addWidget(self.date_style_selector)
         layout.addSpacing(space_after_group)
@@ -923,17 +933,17 @@ class SettingsFrame(QFrame):
         layout.addWidget(self.color_links_check)
         layout.addSpacing(space_after_group)
 
-        layout.addWidget(SettingsHeading("URL Color"))
+        layout.addWidget(QLabel("URL Color"))
         self.url_color_selector = LatexColorSelector(self)
         layout.addWidget(self.url_color_selector)
         layout.addSpacing(space_after_group)
 
-        # handle events
-        def _update_url_color_selector():
-            selectable = self.color_links_check.isChecked()
-            self.url_color_selector.setEnabled(selectable)
+        # handle event
+        self.color_links_check.stateChanged.connect(self._update_urlcolor_selector)
 
-        self.color_links_check.stateChanged.connect(_update_url_color_selector)
+    def _update_urlcolor_selector(self):
+        selectable = self.color_links_check.isChecked()
+        self.url_color_selector.setEnabled(selectable)
 
     def get_settings(self) -> tex.Settings:
         s = tex.Settings()
@@ -1040,10 +1050,6 @@ class SettingsFrame(QFrame):
         self.url_color_selector.set_from_color(s.url_color)
         self.color_links_check.setChecked(s.color_links)
         self.color_links_check.stateChanged.emit(self.color_links_check.isChecked())
-
-
-class SettingsHeading(QLabel):
-    pass
 
 
 class LatexPaperSelector(QComboBox):
@@ -1199,6 +1205,13 @@ def show_error(*, parent=None, text=""):
 
 def show_info(*, parent=None, text=""):
     return show_message(parent=parent, icon=QMessageBox.Icon.Information, text=text)
+
+
+def silent_remove(filepath):
+    try:
+        os.remove(filepath)
+    except OSError:
+        pass
 
 
 def main():
