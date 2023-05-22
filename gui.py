@@ -3,6 +3,7 @@ import os
 import traceback
 import dataclasses
 import json
+import typing
 
 from PyQt6.QtCore import Qt, QProcess
 from PyQt6.QtGui import (
@@ -36,6 +37,7 @@ from PyQt6.QtWidgets import (
     QFileDialog,
     QMessageBox,
     QColorDialog,
+    QWidget,
 )
 
 import txtparse
@@ -292,20 +294,6 @@ class MainWindow(QMainWindow):
         insert_award_action.triggered.connect(self.insert_award)
         insert_award_action.setShortcut(QKeySequence("Ctrl+Shift+w"))
         edit_menu.addAction(insert_award_action)
-
-        edit_menu.addSeparator()
-
-        ensure_periods_action = QAction("Ensure period endings", self)
-        # TODO
-        ensure_periods_action.triggered.connect(lambda: print("ensure periods"))
-        ensure_periods_action.setShortcut(QKeySequence("Ctrl+/"))
-        edit_menu.addAction(ensure_periods_action)
-
-        strip_periods_action = QAction("Strip ending periods", self)
-        # TODO
-        strip_periods_action.triggered.connect(lambda: print("strip periods"))
-        strip_periods_action.setShortcut(QKeySequence("Ctrl+?"))
-        edit_menu.addAction(strip_periods_action)
 
         # LaTeX menu
         latex_menu = QMenu("La&TeX", self)
@@ -912,6 +900,11 @@ class SettingsFrame(QFrame):
         self.bullet_item_sep_selector.setSingleStep(0.1)
         self.bullet_item_sep_selector.setDecimals(1)
         layout.addWidget(self.bullet_item_sep_selector)
+        layout.addSpacing(space_within_group)
+
+        layout.addWidget(QLabel("Handle ending periods"))
+        self.period_policy_selector = PeriodPolicySelector(self)
+        layout.addWidget(self.period_policy_selector)
         layout.addSpacing(space_after_group)
 
         layout.addWidget(Separator(self))
@@ -983,14 +976,16 @@ class SettingsFrame(QFrame):
         s.awards_section_title = self.awards_title_edit.text()
         s.skills_section_title = self.skills_title_edit.text()
 
+        s.bold_award_names = self.bold_award_names_check.isChecked()
+        s.bold_skillset_names = self.bold_skillset_names_check.isChecked()
+
         s.contact_divider = self.contact_divider_edit.text()
 
         s.bullet_text = self.bullet_text_edit.text()
         s.bullet_indent_in_em = self.bullet_indent_selector.value()
         s.bullet_item_sep_in_em = self.bullet_item_sep_selector.value()
 
-        s.bold_award_names = self.bold_award_names_check.isChecked()
-        s.bold_skillset_names = self.bold_skillset_names_check.isChecked()
+        s.ending_period_policy = self.period_policy_selector.get_policy()
 
         s.date_style = self.date_style_selector.get_style()
 
@@ -1036,14 +1031,16 @@ class SettingsFrame(QFrame):
         self.awards_title_edit.setText(s.awards_section_title)
         self.skills_title_edit.setText(s.skills_section_title)
 
+        self.bold_award_names_check.setChecked(s.bold_award_names)
+        self.bold_skillset_names_check.setChecked(s.bold_skillset_names)
+
         self.contact_divider_edit.setText(s.contact_divider)
 
         self.bullet_text_edit.setText(s.bullet_text)
         self.bullet_indent_selector.setValue(s.bullet_indent_in_em)
         self.bullet_item_sep_selector.setValue(s.bullet_item_sep_in_em)
 
-        self.bold_award_names_check.setChecked(s.bold_award_names)
-        self.bold_skillset_names_check.setChecked(s.bold_skillset_names)
+        self.period_policy_selector.set_from_policy(s.ending_period_policy)
 
         self.date_style_selector.set_from_style(s.date_style)
         self.url_follows_text_check.setChecked(s.url_font_follows_text)
@@ -1080,6 +1077,26 @@ class LatexFontSizeSelector(QSpinBox):
 
     def set_from_command(self, command: str):
         self.setValue(self._command_to_value[command])
+
+
+class PeriodPolicySelector(QComboBox):
+    _policies_to_texts = {
+        "": "Do nothing",
+        "add": "Add periods if missing",
+        "remove": "Remove periods if present",
+    }
+
+    _texts_to_policies = {v: k for k, v in _policies_to_texts.items()}
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.addItems(list(self._texts_to_policies))
+
+    def get_policy(self):
+        return self._texts_to_policies[self.currentText()]
+
+    def set_from_policy(self, policy: str):
+        self.setCurrentText(self._policies_to_texts[policy])
 
 
 class LatexColorSelector(QComboBox):

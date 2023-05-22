@@ -38,7 +38,7 @@ hours per week: 1
 start date: 2012-9
 end date: 2012-12
 - This is **bold** and this is *italic*. ***Bold italic*** is also possible.
-- You can nest ***bold** within italic* and ***italic* within bold**. You can also embed links, [like this](https://www.python.org/).
+- You can nest ***bold** within italic* and ***italic* within bold**. You can also embed links, [like this](https://www.python.org/)
 - Two consecutive [hyphens](https://www.thepunctuationguide.com/hyphen.html) will be converted to an [*en dash*](https://www.thepunctuationguide.com/en-dash.html) (--); and three, to an [*em dash*](https://www.thepunctuationguide.com/em-dash.html) (---).
 
 # Projects
@@ -49,8 +49,8 @@ start date: 1989
 end date: Present
 hours per week: 14
 weeks per year: 40
-- Designed and implemented the Python programming language, creating a robust and flexible tool used worldwide.
-- Provide guidance and oversight to the Python development community. Actively contribute to the growth and evolution of Python, including major releases and feature enhancements.
+- Designed and implemented the Python programming language, creating a robust and flexible tool used worldwide
+- Provide guidance and oversight to the Python development community. Actively contribute to the growth and evolution of Python, including major releases and feature enhancements
 
 role: Contributor
 org: Amoeba Project

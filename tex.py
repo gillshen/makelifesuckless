@@ -55,14 +55,15 @@ class Settings:
     awards_section_title: str = "Awards"
     skills_section_title: str = "Skills"
 
-    # bullet appearance
-    bullet_text: str = "•"  # U+2022
-    bullet_indent_in_em: float = 0.0
-    bullet_item_sep_in_em: float = 1.0
-
     # awards & skills appearance
     bold_award_names: bool = False
     bold_skillset_names: bool = True
+
+    # item appearance
+    bullet_text: str = "•"  # U+2022
+    bullet_indent_in_em: float = 0.0
+    bullet_item_sep_in_em: float = 1.0
+    ending_period_policy: str = ""
 
     # date formatting
     date_style: str = "american"
@@ -270,3 +271,15 @@ def format_commitment(hours_per_week: str, weeks_per_year: str, per="/"):
 
 
 ENVIRONMENT.filters["format_commitment"] = format_commitment
+
+
+def handle_ending_period(line: str, policy: str):
+    if policy.lower() == "add" and re.search(r"[a-zA-Z0-9](?:[)'\"])?$", line):
+        return f"{line}."
+    if policy.lower() == "remove" and re.search(r"(?<!\.)\.$", line):
+        return line[:-1]
+    else:
+        return line
+
+
+ENVIRONMENT.filters["handle_ending_period"] = handle_ending_period

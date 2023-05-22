@@ -145,7 +145,7 @@
 <! for edu in cv.education !>
 \edu{<< edu.school|to_latex >>}{%
     loc={<< edu.loc|to_latex >>},
-    date={<< edu.start_date | format_date(settings.date_style, edu.end_date) >>},
+    date={<< edu.start_date|format_date(settings.date_style, edu.end_date) >>},
     degree={<< edu.degree|to_latex >>},
     major={<< edu.major|to_latex >>},
     minor={<< edu.minor|to_latex >>},
@@ -154,14 +154,14 @@
 }
 <!- endfor !>
 <! for test in cv.tests !>
-\textbf{<< test.name|to_latex >>}: << test.score|to_latex >><! if test.date !> (<< test.date | format_date(settings.date_style) >>)<! endif !>
+\textbf{<< test.name|to_latex >>}: << test.score|to_latex >><! if test.date !> (<< test.date|format_date(settings.date_style) >>)<! endif !>
 <! endfor !>
 <!- endif !>
 
 <! if cv.awards -!>
 \section{<< settings.awards_section_title|to_latex >>}
 <! for award in cv.awards !>
-{<! if settings.bold_award_names !>\bfseries <! endif !><< award.name|to_latex >>}, << award.date | format_date(settings.date_style) >>
+{<! if settings.bold_award_names !>\bfseries <! endif !><< award.name|to_latex >>}, << award.date|format_date(settings.date_style) >>
 <! endfor !>
 <!- endif !>
 
@@ -183,11 +183,11 @@
     role={<< activity.role|to_latex >>},
     org={<< activity.org|to_latex >>},
     loc={<< activity.loc|to_latex >>},
-    date={<< activity.start_date | format_date(settings.date_style, activity.end_date) >>},
-    commitment={<< activity.hours_per_week | format_commitment(activity.weeks_per_year) >>}
+    date={<< activity.start_date|format_date(settings.date_style, activity.end_date) >>},
+    commitment={<< activity.hours_per_week|format_commitment(activity.weeks_per_year) >>}
 }
 <! for descr in activity.descriptions -!>
-    \item\relax << descr|to_latex >>
+    \item\relax << descr|to_latex|handle_ending_period(settings.ending_period_policy) >>
 <! endfor -!>
 \end{activity}
 <! endfor !>
