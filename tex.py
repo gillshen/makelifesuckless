@@ -246,3 +246,27 @@ def format_single_date(d: SmartDate | None, style: str) -> str:
 
 
 ENVIRONMENT.filters["format_date"] = format_date
+
+
+def format_commitment(hours_per_week: str, weeks_per_year: str, per="/"):
+    if hours_per_week == "1":
+        hpw = f"1 hour{per}week"
+    elif hours_per_week:
+        hpw = f"{hours_per_week} hours{per}week"
+    else:
+        hpw = ""
+
+    if weeks_per_year == "1":
+        wpy = f"1 week{per}year"
+    elif weeks_per_year:
+        wpy = f"{weeks_per_year} weeks{per}year"
+    else:
+        wpy = ""
+
+    if hpw and wpy:
+        return f"{hpw}, {wpy}"
+    else:
+        return hpw or wpy
+
+
+ENVIRONMENT.filters["format_commitment"] = format_commitment

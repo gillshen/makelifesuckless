@@ -102,23 +102,15 @@
 \define@key{activitykeys}{org}{\def\activity@org{#1}}
 \define@key{activitykeys}{loc}{\def\activity@loc{#1}}
 \define@key{activitykeys}{date}{\def\activity@date{#1}}
-\define@key{activitykeys}{hoursperweek}{\def\activity@hoursperweek{#1}}
-\define@key{activitykeys}{weeksperyear}{\def\activity@weeksperyear{#1}}
+\define@key{activitykeys}{commitment}{\def\activity@commitment{#1}}
 
 \newenvironment{activity}[1]{%
     \begingroup%
-    \setkeys{activitykeys}{org=, loc=, date=, hoursperweek=, weeksperyear=, #1}%
+    \setkeys{activitykeys}{org=, loc=, date=, commitment=, #1}%
     \textbf{\emph{\activity@role}\ifx\activity@org\empty\else{, \activity@org}\fi}%
     <! if settings.show_activity_locations !>\hfill\activity@loc<! endif !>\par
     \activity@date%
-    <! if settings.show_time_commitments !>\hfill
-    \expandafter\ifstrempty\expandafter{\activity@hoursperweek}{}{%
-        \activity@hoursperweek\ \expandafter\ifstrequal\expandafter{\activity@hoursperweek}{1}{hour}{hours}/week}%
-    \expandafter\ifstrempty\expandafter{\activity@hoursperweek}{}{%
-        \expandafter\ifstrempty\expandafter{\activity@weeksperyear}{}{,}}
-    \expandafter\ifstrempty\expandafter{\activity@weeksperyear}{}{%
-        \activity@weeksperyear\ \expandafter\ifstrequal\expandafter{\activity@weeksperyear}{1}{week}{weeks}/year}%
-    <! endif !>\par
+    <! if settings.show_time_commitments !>\hfill\activity@commitment<! endif !>\par
     \endgroup
     \begin{itemize}[nosep]
 }{%
@@ -192,8 +184,7 @@
     org={<< activity.org|to_latex >>},
     loc={<< activity.loc|to_latex >>},
     date={<< activity.start_date | format_date(settings.date_style, activity.end_date) >>},
-    hoursperweek={<< activity.hours_per_week|to_latex >>},
-    weeksperyear={<< activity.weeks_per_year|to_latex >>}
+    commitment={<< activity.hours_per_week | format_commitment(activity.weeks_per_year) >>}
 }
 <! for descr in activity.descriptions -!>
     \item\relax << descr|to_latex >>
