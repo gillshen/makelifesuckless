@@ -101,9 +101,10 @@ def to_latex(s: str):
     # preserve escaped asterisks
     s = s.replace("\\*", '{\\char"002A}')
 
-    # escape `_`, '#', `$`, '%', `&`, '^'
+    # escape `_`, '#', `$`, '%', `&`, '^', '~'
     s = re.sub("([_#$%&])", r"\\\1", s)
     s = s.replace("^", "\\^{}")
+    s = s.replace("~", "\\textasciitilde{}")
 
     # correct quotes
     s = re.sub(r'(^|\s)"', r"\1``", s)
@@ -272,11 +273,18 @@ def format_commitment(hours_per_week: str, weeks_per_year: str, per="/"):
 
 ENVIRONMENT.filters["format_commitment"] = format_commitment
 
+# regex pattern for sentences with ending periods:
+# ending with '.' and not with '..' (probably an ellipsis)
+_HAS_PERIOD = re.compile(r"(?<!\.)\.$")
+
+# regex pattern for sentences missing ending punctuations
+_NEEDS_PERIOD = re.compile(r"[^.!?](?:[)'\"])?$")
+
 
 def handle_ending_period(line: str, policy: str):
-    if policy.lower() == "add" and re.search(r"[a-zA-Z0-9](?:[)'\"])?$", line):
+    if policy.lower() == "add" and _NEEDS_PERIOD.search(line):
         return f"{line}."
-    if policy.lower() == "remove" and re.search(r"(?<!\.)\.$", line):
+    if policy.lower() == "remove" and _HAS_PERIOD.search(line):
         return line[:-1]
     else:
         return line
