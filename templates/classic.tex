@@ -70,8 +70,7 @@
 
 \makeatletter
 \define@key{edukeys}{loc}{\def\edu@loc{#1}}
-\define@key{edukeys}{startdate}{\def\edu@startdate{#1}}
-\define@key{edukeys}{enddate}{\def\edu@enddate{#1}}
+\define@key{edukeys}{date}{\def\edu@date{#1}}
 \define@key{edukeys}{degree}{\def\edu@degree{#1}}
 \define@key{edukeys}{major}{\def\edu@major{#1}}
 \define@key{edukeys}{minor}{\def\edu@minor{#1}}
@@ -80,7 +79,7 @@
 
 \newcommand{\edu}[2]{%
     \begingroup%
-    \setkeys{edukeys}{loc=, startdate=, enddate=, degree=, major=, minor=, gpa=, courses=, #2}%
+    \setkeys{edukeys}{loc=, date=, degree=, major=, minor=, gpa=, courses=, #2}%
     \def\mmg{% major, minor, gpa
         \ifx\edu@major\empty{%
             \ifx\edu@gpa\empty\else{GPA: \edu@gpa}\fi}%
@@ -93,7 +92,7 @@
     \textbf{#1}\hfill\edu@loc\par
     \ifx\edu@degree\empty{\mmg}\else{\edu@degree}\fi%
     \hfill
-    \ifx\edu@startdate\empty\edu@enddate\else{\edu@startdate\,--\,\edu@enddate}\fi\par
+    \edu@date\par
     \ifx\edu@degree\empty\else{\mmg\par}\fi%
     \ifx\edu@courses\empty\else{Courses: \edu@courses\par}\fi
     \endgroup\par\addvspace{\postentryskip}
@@ -102,17 +101,16 @@
 \define@key{activitykeys}{role}{\def\activity@role{#1}}
 \define@key{activitykeys}{org}{\def\activity@org{#1}}
 \define@key{activitykeys}{loc}{\def\activity@loc{#1}}
-\define@key{activitykeys}{startdate}{\def\activity@startdate{#1}}
-\define@key{activitykeys}{enddate}{\def\activity@enddate{#1}}
+\define@key{activitykeys}{date}{\def\activity@date{#1}}
 \define@key{activitykeys}{hoursperweek}{\def\activity@hoursperweek{#1}}
 \define@key{activitykeys}{weeksperyear}{\def\activity@weeksperyear{#1}}
 
 \newenvironment{activity}[1]{%
     \begingroup%
-    \setkeys{activitykeys}{org=, loc=, startdate=, enddate=, hoursperweek=, weeksperyear=, #1}%
+    \setkeys{activitykeys}{org=, loc=, date=, hoursperweek=, weeksperyear=, #1}%
     \textbf{\emph{\activity@role}\ifx\activity@org\empty\else{, \activity@org}\fi}%
     <! if settings.show_activity_locations !>\hfill\activity@loc<! endif !>\par
-    \expandafter\ifstrempty\expandafter{\activity@startdate}{\activity@enddate}{\activity@startdate\,--\,\activity@enddate}%
+    \activity@date%
     <! if settings.show_time_commitments !>\hfill
     \expandafter\ifstrempty\expandafter{\activity@hoursperweek}{}{%
         \activity@hoursperweek\ \expandafter\ifstrequal\expandafter{\activity@hoursperweek}{1}{hour}{hours}/week}%
@@ -155,8 +153,7 @@
 <! for edu in cv.education !>
 \edu{<< edu.school|to_latex >>}{%
     loc={<< edu.loc|to_latex >>},
-    startdate={<< edu.start_date.to_str(style=settings.date_style, mask=edu.end_date) >>},
-    enddate={<< edu.end_date.to_str(style=settings.date_style) >>},
+    date={<< edu.start_date | format_date(settings.date_style, edu.end_date) >>},
     degree={<< edu.degree|to_latex >>},
     major={<< edu.major|to_latex >>},
     minor={<< edu.minor|to_latex >>},
@@ -165,14 +162,14 @@
 }
 <!- endfor !>
 <! for test in cv.tests !>
-\textbf{<< test.name|to_latex >>}: << test.score|to_latex >><! if test.date !> (<< test.date.to_str(style=settings.date_style) >>)<! endif !>
+\textbf{<< test.name|to_latex >>}: << test.score|to_latex >><! if test.date !> (<< test.date | format_date(settings.date_style) >>)<! endif !>
 <! endfor !>
 <!- endif !>
 
 <! if cv.awards -!>
 \section{<< settings.awards_section_title|to_latex >>}
 <! for award in cv.awards !>
-{<! if settings.bold_award_names !>\bfseries <! endif !><< award.name|to_latex >>}, << award.date.to_str(style=settings.date_style) >>
+{<! if settings.bold_award_names !>\bfseries <! endif !><< award.name|to_latex >>}, << award.date | format_date(settings.date_style) >>
 <! endfor !>
 <!- endif !>
 
@@ -194,8 +191,7 @@
     role={<< activity.role|to_latex >>},
     org={<< activity.org|to_latex >>},
     loc={<< activity.loc|to_latex >>},
-    startdate={<< activity.start_date.to_str(style=settings.date_style, mask=activity.end_date) >>},
-    enddate={<< activity.end_date.to_str(style=settings.date_style) >>},
+    date={<< activity.start_date | format_date(settings.date_style, activity.end_date) >>},
     hoursperweek={<< activity.hours_per_week|to_latex >>},
     weeksperyear={<< activity.weeks_per_year|to_latex >>}
 }

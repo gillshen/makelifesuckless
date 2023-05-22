@@ -1134,7 +1134,7 @@ class DateFormatSelector(QComboBox):
         "iso",
         "yyyy/mm/dd",
     ]:
-        key = _sample_date.to_str(style=style)
+        key = tex.format_date(_sample_date, style=style)
         _sample_to_style[key] = style
 
     del style
@@ -1148,7 +1148,7 @@ class DateFormatSelector(QComboBox):
         return self._sample_to_style[self.currentText()]
 
     def set_from_style(self, style: str):
-        self.setCurrentText(self._sample_date.to_str(style=style))
+        self.setCurrentText(tex.format_date(self._sample_date, style))
 
 
 class Separator(QFrame):

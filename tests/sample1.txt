@@ -6,7 +6,7 @@ phone: (123) 456-7890
 school: University of Amsterdam
 loc: Amsterdam, The Netherlands
 degree: Master in Mathematics & Computer Science
-start date: 1981
+start date: 1981-09
 end date: 1982
 gpa: \textsc{unknown}
 
@@ -14,8 +14,12 @@ school: University of Amsterdam
 loc: Amsterdam, The Netherlands
 degree: Bachelor of Science
 major: Computer Science
-start date: 1977
-end date: 1981
+start date: 1977-09
+end date: 1981-06-30
+
+school: Amsterdam Day Care
+start date: 1970-01-01
+end date: 1970-01-02
 
 # Work Experience
 

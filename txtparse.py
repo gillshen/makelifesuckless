@@ -129,15 +129,34 @@ class SmartDate:
     fallback: str = ""
 
     def __bool__(self):
-        return bool(
-            self.year is not None
-            or self.month is not None
-            or self.day is not None
-            or self.fallback
-        )
+        return bool(self.is_date or self.fallback)
+
+    @property
+    def is_date(self):
+        return self.year is not None
+
+    @property
+    def resolution(self) -> str | None:
+        if self.day:
+            return "day"
+        if self.month:
+            return "month"
+        if self.year:
+            return "year"
+        return
+
+    @property
+    def as_date(self):
+        if not self.year or not self.month:
+            return
+        return datetime.date(self.year, self.month, self.day or 1)
 
     @classmethod
     def from_str(cls, s: str):
+        # TODO parse the date string step by step
+        # try splitting with '-' or '/' or '.'
+        # if splitting into two or three: try yyyy-mm or yyyy-mm-dd
+        # if splitting into one: try year; if not, fallback
         mo = re.match(r"^(\d{4})(?:([-./])([01]?[0-9]))?(?:\2([0-3]?[0-9]))?$", s)
         if mo is None:
             return cls(fallback=s)
@@ -160,69 +179,6 @@ class SmartDate:
             raise DateError("day out of range")
         else:
             return cls(year=year, month=month, day=day)
-
-    def to_str(self, *, style: str = "american", mask: "SmartDate" = None):
-        mask_date = mask or SmartDate()
-
-        if self.year is None and self.fallback != mask_date.fallback:
-            return self.fallback
-        elif self.year is None:
-            return ""
-
-        if self.month is None and self.year != mask_date.year:
-            return str(self.year)
-        elif self.month is None:
-            return ""
-
-        # NOTE: the hash sign, as in '%#d', is windows specific;
-        # on Mac/Linux would need to use '-' instead (thus '%-d')
-        if style == "american":
-            if self.year != mask_date.year:
-                format_str = "%b %#d, %Y" if self.day else "%b %Y"
-            elif self.month != mask_date.month:
-                format_str = "%b %#d" if self.day else "%b"
-            else:
-                format_str = "%#d" if self.day and self.day != mask_date.day else ""
-
-        elif style == "american long":
-            if self.year != mask_date.year:
-                format_str = "%B %#d, %Y" if self.day else "%B %Y"
-            elif self.month != mask_date.month:
-                format_str = "%B %#d" if self.day else "%B"
-            else:
-                format_str = "%#d" if self.day and self.day != mask_date.day else ""
-
-        elif style == "american slash":
-            format_str = "%m/%d/%Y" if self.day else "%m/%Y"
-
-        elif style == "british":
-            if self.year != mask_date.year:
-                format_str = "%#d %b %Y" if self.day else "%b %Y"
-            elif self.month != mask_date.month:
-                format_str = "%#d %b" if self.day else "%b"
-            else:
-                format_str = "%#d" if self.day and self.day != mask_date.day else ""
-
-        elif style == "british long":
-            if self.year != mask_date.year:
-                format_str = "%#d %B %Y" if self.day else "%B %Y"
-            elif self.month != mask_date.month:
-                format_str = "%#d %B" if self.day else "%B"
-            else:
-                format_str = "%#d" if self.day and self.day != mask_date.day else ""
-
-        elif style == "british slash":
-            format_str = "%d/%m/%Y" if self.day else "%m/%Y"
-
-        elif style == "iso":
-            format_str = "%Y-%m-%d" if self.day else "%Y-%m"
-        elif style == "yyyy/mm/dd":
-            format_str = "%Y/%m/%d" if self.day else "%Y/%m"
-        else:
-            raise ValueError(f"unrecognized style: {style}")
-
-        d = datetime.date(year=self.year, month=self.month, day=self.day or 1)
-        return d.strftime(format_str)
 
 
 @dataclasses.dataclass

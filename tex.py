@@ -1,10 +1,11 @@
 import dataclasses
 import json
 import re
+import datetime
 
 import jinja2
 
-from txtparse import CV
+from txtparse import CV, SmartDate
 
 ENVIRONMENT = jinja2.Environment(
     block_start_string="<!",
@@ -91,6 +92,10 @@ def render(*, template_path: str, cv: CV, settings: Settings):
     return template.render(cv=cv, settings=settings)
 
 
+# Generic filter:
+# - escape special characters
+# - correct quotes
+# - implement markdown syntax for italic, bold, and url
 def to_latex(s: str):
     # preserve escaped asterisks
     s = s.replace("\\*", '{\\char"002A}')
@@ -116,5 +121,128 @@ def to_latex(s: str):
     return s
 
 
-# Register filters
 ENVIRONMENT.filters["to_latex"] = to_latex
+
+
+def format_date(
+    date1: SmartDate | None,
+    style: str,
+    date2: SmartDate | None = None,
+) -> str:
+    # date2, if given, should be a later date than date1
+    # but the function will not check if this is the case
+    str1 = format_single_date(date1, style)
+    str2 = format_single_date(date2, style)
+
+    # If date2 is None or has the same str repr as date1
+    if not date2 or (str1 == str2):
+        return str1
+    # If date1 is None but date1 is not:
+    if not date1:
+        return str2
+
+    # Else we have two repr-different SmartDates, and
+    # no consolidation is required if any of the following is true:
+    # - at least one SmartDate isn't a real date
+    # - the two objects have different `year` values
+    # - the two objects have different resolutions
+    # - the style is not one of the consolidatable style
+    dash = "\,--\,"
+    consolidatable_styles = [
+        "american",
+        "american long",
+        "british",
+        "british long",
+    ]
+    if (
+        not date1.is_date
+        or not date2.is_date
+        or (date1.year != date2.year)
+        or (date1.resolution != date2.resolution)
+        or style not in consolidatable_styles
+    ):
+        return f"{str1}{dash}{str2}"
+
+    # Consolidation required if both SmartDates are real dates
+    # with identical `year` values and resolutions, and
+    # the caller calls for a consolidatable style:
+    # - different months without `day` values: May-Jun 2023
+    # - different days in the same month: May 22-24, 2023,
+    # - different days in different months: May 22 - June 22, 2023
+    fulldate1: datetime.date = date1.as_date
+    fulldate2: datetime.date = date2.as_date
+    year = date1.year
+    m1 = fulldate1.strftime("%b")
+    m2 = fulldate2.strftime("%b")
+    mm1 = fulldate1.strftime("%B")
+    mm2 = fulldate2.strftime("%B")
+    # NOTE the hash sign is windows specific
+    d1 = fulldate1.strftime("%#d")
+    d2 = fulldate2.strftime("%#d")
+
+    day_dash = "--"  # between days
+
+    # Different months without `day` values
+    if date1.day is None and style in ["american", "british"]:
+        return f"{m1}{dash}{m2} {year}"
+    elif date1.day is None:
+        return f"{mm1}{dash}{mm2} {year}"
+
+    # Different days in the same month
+    elif date1.month == date2.month:
+        if style == "american":
+            return f"{m1} {d1}{day_dash}{d2}, {year}"
+        if style == "american long":
+            return f"{mm1} {d1}{day_dash}{d2}, {year}"
+        if style == "british":
+            return f"{d1}{day_dash}{d2} {m1} {year}"
+        if style == "british long":
+            return f"{d1}{day_dash}{d2} {mm1} {year}"
+
+    # Different days in different months
+    elif style == "american":
+        return f"{m1} {d1}{dash}{m2}{d2}, {year}"
+    elif style == "american long":
+        return f"{mm1} {d1}{dash}{mm2}{d2}, {year}"
+    elif style == "british":
+        return f"{d1} {m1}{dash}{d2}{m2} {year}"
+    elif style == "british long":
+        return f"{d1} {mm1}{dash}{d2}{mm2} {year}"
+
+    else:
+        raise ValueError((date1, date2, style))
+
+
+def format_single_date(d: SmartDate | None, style: str) -> str:
+    if d is None:
+        return ""
+    if not d.is_date:
+        return d.fallback
+    if d.month is None:
+        return str(d.year)
+
+    # (style, d.day is not None) -> formatter
+    style_map = {
+        ("american", True): "%b %#d, %Y",
+        ("american", False): "%b %Y",
+        ("american long", True): "%B %#d, %Y",
+        ("american long", False): "%B %Y",
+        ("american slash", True): "%m/%d/%Y",
+        ("american slash", False): "%m/%Y",
+        ("british", True): "%#d %b %Y",
+        ("british", False): "%b %Y",
+        ("british long", True): "%#d %B %Y",
+        ("british long", False): "%B %Y",
+        ("british slash", True): "%d/%m/%Y",
+        ("british slash", False): "%m/%Y",
+        ("iso", True): "%Y-%m-%d",
+        ("iso", False): "%Y-%m",
+        ("yyyy/mm/dd", True): "%Y/%m/%d",
+        ("yyyy/mm/dd", False): "%Y/%m",
+    }
+    date = datetime.date(year=d.year, month=d.month, day=d.day or 1)
+    format_str = style_map[style, d.day is not None]
+    return date.strftime(format_str)
+
+
+ENVIRONMENT.filters["format_date"] = format_date
