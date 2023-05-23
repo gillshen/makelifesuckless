@@ -3,7 +3,6 @@ import os
 import traceback
 import dataclasses
 import json
-import typing
 
 from PyQt6.QtCore import Qt, QProcess
 from PyQt6.QtGui import (
@@ -36,8 +35,6 @@ from PyQt6.QtWidgets import (
     QLineEdit,
     QFileDialog,
     QMessageBox,
-    QColorDialog,
-    QWidget,
 )
 
 import txtparse
@@ -142,8 +139,12 @@ class MainWindow(QMainWindow):
         button_frame_layout.addWidget(self.run_button, 0, 1)
 
         # Populate menus; update UI
+        self._create_actions()
         self._create_menu()
         self._update_ui_with_config()
+
+        self.editor.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.editor.customContextMenuRequested.connect(self.show_context_menu)
 
         # Set window properties
         self.setGeometry(200, 100, 1000, 660)
@@ -160,206 +161,220 @@ class MainWindow(QMainWindow):
             config = Config()
         return config
 
+    def _create_actions(self):
+        # File and app actions
+        self._a_new = QAction("&New", self)
+        self._a_new.triggered.connect(self.new_file)
+        self._a_new.setShortcut(QKeySequence("Ctrl+n"))
+
+        self._a_newblank = QAction("New &Blank", self)
+        self._a_newblank.triggered.connect(self.new_blank_file)
+        self._a_newblank.setShortcut(QKeySequence("Ctrl+Shift+n"))
+
+        self._a_open = QAction("&Open...", self)
+        self._a_open.triggered.connect(self.open_file)
+        self._a_open.setShortcut(QKeySequence("Ctrl+o"))
+
+        self._a_reload = QAction("&Reload", self)
+        self._a_reload.triggered.connect(self.reload_file)
+        self._a_reload.setShortcut(QKeySequence("F5"))
+        self._a_reload.setDisabled(True)
+
+        self._a_save = QAction("&Save", self)
+        self._a_save.triggered.connect(self.save_file)
+        self._a_save.setShortcut(QKeySequence("Ctrl+s"))
+
+        self._a_saveas = QAction("Save &As...", self)
+        self._a_saveas.triggered.connect(self.save_file_as)
+        self._a_saveas.setShortcut(QKeySequence("Ctrl+Shift+s"))
+
+        self._a_quit = QAction("&Quit", self)
+        self._a_quit.triggered.connect(self.close)
+        self._a_quit.setShortcut(QKeySequence("Ctrl+q"))
+
+        # Edit actions
+        self._a_undo = QAction("&Undo", self)
+        self._a_undo.triggered.connect(self.editor.undo)
+        self._a_undo.setShortcut("Ctrl+z")
+
+        self._a_redo = QAction("&Redo", self)
+        self._a_redo.triggered.connect(self.editor.redo)
+        self._a_redo.setShortcut("Ctrl+y")
+
+        self._a_cut = QAction("Cu&t", self)
+        self._a_cut.triggered.connect(self.editor.cut)
+        self._a_cut.setShortcut("Ctrl+x")
+
+        self._a_copy = QAction("&Copy", self)
+        self._a_copy.triggered.connect(self.editor.copy)
+        self._a_copy.setShortcut("Ctrl+c")
+
+        self._a_paste = QAction("&Paste", self)
+        self._a_paste.triggered.connect(self.editor.paste)
+        self._a_paste.setShortcut("Ctrl+v")
+
+        self._a_selectall = QAction("Select &All", self)
+        self._a_selectall.triggered.connect(self.editor.selectAll)
+        self._a_selectall.setShortcut(QKeySequence("Ctrl+a"))
+
+        # TODO
+        self._a_goto = QAction("&Go to Line...", self)
+        self._a_goto.triggered.connect(lambda: print("editor.goto_line"))
+        self._a_goto.setShortcut(QKeySequence("Ctrl+g"))
+        self._a_goto.setDisabled(True)
+
+        # TODO
+        self._a_find = QAction("&Find...", self)
+        self._a_find.triggered.connect(lambda: print("editor.find"))
+        self._a_find.setShortcut(QKeySequence("Ctrl+f"))
+        self._a_find.setDisabled(True)
+
+        # TODO
+        self._a_replace = QAction("&Replace...", self)
+        self._a_replace.triggered.connect(lambda: print("editor.replace"))
+        self._a_replace.setShortcut(QKeySequence("Ctrl+h"))
+        self._a_replace.setDisabled(True)
+
+        self._a_insertact = QAction("Insert &Activity", self)
+        self._a_insertact.triggered.connect(self.insert_activity)
+        self._a_insertact.setShortcut(QKeySequence("Ctrl+Shift+a"))
+
+        self._a_insertedu = QAction("Insert &Education", self)
+        self._a_insertedu.triggered.connect(self.insert_education)
+        self._a_insertedu.setShortcut(QKeySequence("Ctrl+Shift+e"))
+
+        self._a_insertskills = QAction("Insert S&killset", self)
+        self._a_insertskills.triggered.connect(self.insert_skillset)
+        self._a_insertskills.setShortcut(QKeySequence("Ctrl+Shift+k"))
+
+        self._a_inserttest = QAction("Insert &Test", self)
+        self._a_inserttest.triggered.connect(self.insert_test)
+        self._a_inserttest.setShortcut(QKeySequence("Ctrl+Shift+t"))
+
+        self._a_insertaward = QAction("Insert A&ward", self)
+        self._a_insertaward.triggered.connect(self.insert_award)
+        self._a_insertaward.setShortcut(QKeySequence("Ctrl+Shift+w"))
+
+        # LaTeX actions
+        self._a_parse = QAction("&Parse", self)
+        self._a_parse.triggered.connect(self.show_parse_tree)
+        self._a_parse.setShortcut(QKeySequence("Ctrl+`"))
+        self._a_parse.setToolTip("Show the parse tree in the log window")
+
+        self._a_runlatex = QAction("&Run", self)
+        self._a_runlatex.triggered.connect(self.run_latex)
+        self._a_runlatex.setShortcut(QKeySequence("Ctrl+Shift+r"))
+
+        self._a_importsettings = QAction("&Import Settings...", self)
+        self._a_importsettings.triggered.connect(self.import_settings)
+        self._a_importsettings.setShortcut(QKeySequence("Ctrl+i"))
+        self._a_importsettings.setToolTip("Load LaTeX settings from a file")
+
+        self._a_exportsettings = QAction("&Export Settings...", self)
+        self._a_exportsettings.triggered.connect(self.export_settings)
+        self._a_exportsettings.setShortcut(QKeySequence("Ctrl+e"))
+        self._a_exportsettings.setToolTip("Save current LaTeX settings to a file")
+
+        self._a_restoredefault = QAction("Restore &Default", self)
+        self._a_restoredefault.triggered.connect(self.restore_default)
+        self._a_restoredefault.setShortcut(QKeySequence("Ctrl+Shift+d"))
+        self._a_restoredefault.setToolTip("Restore default LaTeX settings")
+
+        # Editor options
+        self._a_largerfont = QAction("Zoom &In", self)
+        self._a_largerfont.triggered.connect(self.increment_editor_font_size)
+        self._a_largerfont.setShortcut(QKeySequence("Ctrl+="))
+
+        self._a_smallerfont = QAction("Zoom &Out", self)
+        self._a_smallerfont.triggered.connect(self.decrement_editor_font_size)
+        self._a_smallerfont.setShortcut(QKeySequence("Ctrl+-"))
+
+        self._a_togglewrap = QAction("&Wrap Lines", self)
+        self._a_togglewrap.triggered.connect(self.toggle_wrap)
+        self._a_togglewrap.setShortcut(QKeySequence("Alt+z"))
+        self._a_togglewrap.setCheckable(True)
+
+        self._a_configdialog = QAction("&More...", self)
+        self._a_configdialog.triggered.connect(self.open_config_window)
+        self._a_configdialog.setShortcut(QKeySequence("Ctrl+,"))
+
     def _create_menu(self):
         # File menu
         file_menu = QMenu("&File", self)
         file_menu.setToolTipsVisible(True)
         self.menubar.addMenu(file_menu)
 
-        new_action = QAction("&New", self)
-        new_action.triggered.connect(self.new_file)
-        new_action.setShortcut(QKeySequence("Ctrl+n"))
-        file_menu.addAction(new_action)
-
-        new_blank_action = QAction("New &Blank", self)
-        new_blank_action.triggered.connect(self.new_blank_file)
-        new_blank_action.setShortcut(QKeySequence("Ctrl+Shift+n"))
-        file_menu.addAction(new_blank_action)
-
+        file_menu.addAction(self._a_new)
+        file_menu.addAction(self._a_newblank)
         file_menu.addSeparator()
-
-        open_action = QAction("&Open...", self)
-        open_action.triggered.connect(self.open_file)
-        open_action.setShortcut(QKeySequence("Ctrl+o"))
-        file_menu.addAction(open_action)
-
-        self.reload_action = QAction("&Reload", self)
-        self.reload_action.triggered.connect(self.reload_file)
-        self.reload_action.setShortcut(QKeySequence("F5"))
-        self.reload_action.setDisabled(True)
-        file_menu.addAction(self.reload_action)
-
+        file_menu.addAction(self._a_open)
+        file_menu.addAction(self._a_reload)
         file_menu.addSeparator()
-
-        save_action = QAction("&Save", self)
-        save_action.triggered.connect(self.save_file)
-        save_action.setShortcut(QKeySequence("Ctrl+s"))
-        file_menu.addAction(save_action)
-
-        save_as_action = QAction("Save &As...", self)
-        save_as_action.triggered.connect(self.save_file_as)
-        save_as_action.setShortcut(QKeySequence("Ctrl+Shift+s"))
-        file_menu.addAction(save_as_action)
-
+        file_menu.addAction(self._a_save)
+        file_menu.addAction(self._a_saveas)
         file_menu.addSeparator()
-
-        quit_action = QAction("&Quit", self)
-        quit_action.triggered.connect(self.close)
-        quit_action.setShortcut(QKeySequence("Ctrl+q"))
-        file_menu.addAction(quit_action)
+        file_menu.addAction(self._a_quit)
 
         # Edit menu
         edit_menu = QMenu("&Edit", self)
         edit_menu.setToolTipsVisible(True)
         self.menubar.addMenu(edit_menu)
 
-        undo_action = QAction("&Undo", self)
-        undo_action.triggered.connect(self.editor.undo)
-        undo_action.setShortcut("Ctrl+z")
-        edit_menu.addAction(undo_action)
-
-        redo_action = QAction("&Redo", self)
-        redo_action.triggered.connect(self.editor.redo)
-        redo_action.setShortcut("Ctrl+y")
-        edit_menu.addAction(redo_action)
-
+        edit_menu.addAction(self._a_undo)
+        edit_menu.addAction(self._a_redo)
         edit_menu.addSeparator()
-
-        cut_action = QAction("Cu&t", self)
-        cut_action.triggered.connect(self.editor.cut)
-        cut_action.setShortcut("Ctrl+x")
-        edit_menu.addAction(cut_action)
-
-        copy_action = QAction("&Copy", self)
-        copy_action.triggered.connect(self.editor.copy)
-        copy_action.setShortcut("Ctrl+c")
-        edit_menu.addAction(copy_action)
-
-        paste_action = QAction("&Paste", self)
-        paste_action.triggered.connect(self.editor.paste)
-        paste_action.setShortcut("Ctrl+v")
-        edit_menu.addAction(paste_action)
-
+        edit_menu.addAction(self._a_cut)
+        edit_menu.addAction(self._a_copy)
+        edit_menu.addAction(self._a_paste)
         edit_menu.addSeparator()
-
-        select_all_action = QAction("Select &All", self)
-        select_all_action.triggered.connect(self.editor.selectAll)
-        select_all_action.setShortcut(QKeySequence("Ctrl+a"))
-        edit_menu.addAction(select_all_action)
-
-        goto_action = QAction("&Go to Line...", self)
-        # TODO
-        goto_action.triggered.connect(lambda: print("editor.goto_line"))
-        goto_action.setDisabled(True)
-        goto_action.setShortcut(QKeySequence("Ctrl+g"))
-        edit_menu.addAction(goto_action)
-
-        find_action = QAction("&Find...", self)
-        # TODO
-        find_action.triggered.connect(lambda: print("editor.find"))
-        find_action.setDisabled(True)
-        find_action.setShortcut(QKeySequence("Ctrl+f"))
-        edit_menu.addAction(find_action)
-
-        replace_action = QAction("&Replace...", self)
-        # TODO
-        replace_action.triggered.connect(lambda: print("editor.replace"))
-        replace_action.setDisabled(True)
-        replace_action.setShortcut(QKeySequence("Ctrl+h"))
-        edit_menu.addAction(replace_action)
-
+        edit_menu.addAction(self._a_selectall)
+        edit_menu.addAction(self._a_goto)
+        edit_menu.addAction(self._a_find)
+        edit_menu.addAction(self._a_replace)
         edit_menu.addSeparator()
-
-        insert_activity_action = QAction("Insert &Activity", self)
-        insert_activity_action.triggered.connect(self.insert_activity)
-        insert_activity_action.setShortcut(QKeySequence("Ctrl+Shift+a"))
-        edit_menu.addAction(insert_activity_action)
-
-        insert_edu_action = QAction("Insert &Education", self)
-        insert_edu_action.triggered.connect(self.insert_education)
-        insert_edu_action.setShortcut(QKeySequence("Ctrl+Shift+e"))
-        edit_menu.addAction(insert_edu_action)
-
-        insert_skillset_action = QAction("Insert S&killset", self)
-        insert_skillset_action.triggered.connect(self.insert_skillset)
-        insert_skillset_action.setShortcut(QKeySequence("Ctrl+Shift+k"))
-        edit_menu.addAction(insert_skillset_action)
-
-        insert_test_action = QAction("Insert &Test", self)
-        insert_test_action.triggered.connect(self.insert_test)
-        insert_test_action.setShortcut(QKeySequence("Ctrl+Shift+t"))
-        edit_menu.addAction(insert_test_action)
-
-        insert_award_action = QAction("Insert A&ward", self)
-        insert_award_action.triggered.connect(self.insert_award)
-        insert_award_action.setShortcut(QKeySequence("Ctrl+Shift+w"))
-        edit_menu.addAction(insert_award_action)
+        edit_menu.addAction(self._a_insertact)
+        edit_menu.addAction(self._a_insertedu)
+        edit_menu.addAction(self._a_insertskills)
+        edit_menu.addAction(self._a_inserttest)
+        edit_menu.addAction(self._a_insertaward)
 
         # LaTeX menu
         latex_menu = QMenu("La&TeX", self)
         latex_menu.setToolTipsVisible(True)
         self.menubar.addMenu(latex_menu)
 
-        parse_action = QAction("&Parse", self)
-        parse_action.triggered.connect(self.show_parse_tree)
-        parse_action.setShortcut(QKeySequence("Ctrl+`"))
-        parse_action.setToolTip("Show the parse tree in the log window")
-        latex_menu.addAction(parse_action)
-
-        self.run_latex_action = QAction("&Run", self)
-        self.run_latex_action.triggered.connect(self.run_latex)
-        self.run_latex_action.setShortcut(QKeySequence("Ctrl+Shift+r"))
-        latex_menu.addAction(self.run_latex_action)
-
+        latex_menu.addAction(self._a_parse)
+        latex_menu.addAction(self._a_runlatex)
         latex_menu.addSeparator()
-
-        import_settings_action = QAction("&Import Settings...", self)
-        import_settings_action.triggered.connect(self.import_settings)
-        import_settings_action.setShortcut(QKeySequence("Ctrl+i"))
-        import_settings_action.setToolTip("Load LaTeX settings from a file")
-        latex_menu.addAction(import_settings_action)
-
-        export_settings_action = QAction("&Export Settings...", self)
-        export_settings_action.triggered.connect(self.export_settings)
-        export_settings_action.setShortcut(QKeySequence("Ctrl+e"))
-        export_settings_action.setToolTip("Save current LaTeX settings to a file")
-        latex_menu.addAction(export_settings_action)
-
-        restore_default_action = QAction("Restore &Default", self)
-        restore_default_action.triggered.connect(self.restore_default)
-        restore_default_action.setShortcut(QKeySequence("Ctrl+Shift+d"))
-        restore_default_action.setToolTip("Restore default LaTeX settings")
-        latex_menu.addAction(restore_default_action)
+        latex_menu.addAction(self._a_importsettings)
+        latex_menu.addAction(self._a_exportsettings)
+        latex_menu.addAction(self._a_restoredefault)
 
         # Options menu
         options_menu = QMenu("&Options", self)
         options_menu.setToolTipsVisible(True)
         self.menubar.addMenu(options_menu)
 
-        zoom_in_action = QAction("Zoom &In", self)
-        zoom_in_action.triggered.connect(self.increment_editor_font_size)
-        zoom_in_action.setShortcut(QKeySequence("Ctrl+="))
-        options_menu.addAction(zoom_in_action)
-
-        zoom_out_action = QAction("Zoom &Out", self)
-        zoom_out_action.triggered.connect(self.decrement_editor_font_size)
-        zoom_out_action.setShortcut(QKeySequence("Ctrl+-"))
-        options_menu.addAction(zoom_out_action)
-
+        options_menu.addAction(self._a_largerfont)
+        options_menu.addAction(self._a_smallerfont)
         options_menu.addSeparator()
-
-        self.toggle_wrap_action = QAction("&Wrap Lines", self)
-        self.toggle_wrap_action.triggered.connect(self.toggle_wrap)
-        self.toggle_wrap_action.setShortcut(QKeySequence("Alt+z"))
-        self.toggle_wrap_action.setCheckable(True)
-        options_menu.addAction(self.toggle_wrap_action)
-
+        options_menu.addAction(self._a_togglewrap)
         options_menu.addSeparator()
+        options_menu.addAction(self._a_configdialog)
 
-        open_config_action = QAction("&More...", self)
-        open_config_action.triggered.connect(self.open_config_window)
-        open_config_action.setShortcut(QKeySequence("Ctrl+,"))
-        options_menu.addAction(open_config_action)
+    def show_context_menu(self, position):
+        context_menu = self.editor.createStandardContextMenu()
+        # insertion actions
+        context_menu.addSeparator()
+        context_edit_menu = QMenu("Insert", self)
+        context_menu.addMenu(context_edit_menu)
+        context_edit_menu.addAction(self._a_insertact)
+        context_edit_menu.addAction(self._a_insertedu)
+        context_edit_menu.addAction(self._a_insertskills)
+        context_edit_menu.addAction(self._a_inserttest)
+        context_edit_menu.addAction(self._a_insertaward)
+        # TODO gpt actions
+        context_menu.exec(self.editor.mapToGlobal(position))
 
     def _update_ui_with_config(self):
         # editor font and line wrap
@@ -407,7 +422,7 @@ class MainWindow(QMainWindow):
         self.console.setPalette(console_palette)
 
         # menu items
-        self.toggle_wrap_action.setChecked(self._config.editor_wrap_lines)
+        self._a_togglewrap.setChecked(self._config.editor_wrap_lines)
 
     def _load_initial_settings(self):
         try:
@@ -447,7 +462,7 @@ class MainWindow(QMainWindow):
 
     def run_latex(self):
         self.run_button.setDisabled(True)
-        self.run_latex_action.setDisabled(True)
+        self._a_runlatex.setDisabled(True)
         self.console.clear()
         try:
             # TODO hard-coded paths
@@ -477,7 +492,7 @@ class MainWindow(QMainWindow):
     def _handle_proc_finish(self, exit_code, exit_status):
         # re-enable UI
         self.run_button.setDisabled(False)
-        self.run_latex_action.setDisabled(False)
+        self._a_runlatex.setDisabled(False)
         # clean up
         silent_remove("output.aux")
         silent_remove("output.log")
@@ -505,12 +520,12 @@ class MainWindow(QMainWindow):
     def _update_filepath(self):
         if self._filepath:
             filename = os.path.basename(self._filepath)
-            self.reload_action.setDisabled(False)
-            self.reload_action.setText(f"Reload {filename}")
+            self._a_reload.setDisabled(False)
+            self._a_reload.setText(f"Reload {filename}")
         else:
             filename = "untitled"
-            self.reload_action.setDisabled(True)
-            self.reload_action.setText("Reload")
+            self._a_reload.setDisabled(True)
+            self._a_reload.setText("Reload")
         self.setWindowTitle(f"{filename}[*] - {APP_TITLE}")
         self.setWindowFilePath(self._filepath)
 
