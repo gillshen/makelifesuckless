@@ -2,7 +2,7 @@ import json
 
 import openai
 
-with open("gpt/keys.json", encoding="utf-8") as creds_file:
+with open("keys.json", encoding="utf-8") as creds_file:
     creds = json.load(creds_file)
 
 cred = creds[0]
@@ -11,10 +11,14 @@ openai.api_base = cred["base"]
 
 
 class Chat:
-    def __init__(self, system_message="You are a helpful assistant."):
-        self.model = "gpt-3.5-turbo"
-        self.messages = []
+    def __init__(
+        self,
+        model="gpt-3.5-turbo",
+        system_message="You are a helpful assistant.",
+    ):
+        self.model = model
         self.system_message = system_message
+        self.messages = []
         self.reset()
 
     def reset(self):

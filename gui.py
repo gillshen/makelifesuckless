@@ -39,6 +39,7 @@ from PyQt6.QtWidgets import (
 
 import txtparse
 import tex
+import chat
 
 APP_TITLE = "Curriculum Victim"
 LAST_USED_SETTINGS = "settings/last_used.json"
@@ -83,6 +84,7 @@ class MainWindow(QMainWindow):
 
         self._filepath = ""
         self._config = self._get_config()
+        self._windows = []  # stand-alone prompt windows
         self.menubar = self.menuBar()
 
         # Main widget
@@ -138,30 +140,7 @@ class MainWindow(QMainWindow):
         self.run_button.clicked.connect(self.run_latex)
         button_frame_layout.addWidget(self.run_button, 0, 1)
 
-        # Populate menus; update UI
-        self._create_actions()
-        self._create_menu()
-        self._update_ui_with_config()
-
-        self.editor.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
-        self.editor.customContextMenuRequested.connect(self.show_context_menu)
-
-        # Set window properties
-        self.setGeometry(200, 100, 1000, 660)
-        central_widget.setSizes([680, 320])
-        editor_panel.setSizes([450, 150])
-
-        self.new_file()
-        self._load_initial_settings()
-
-    def _get_config(self):
-        try:
-            config = Config.from_json(LAST_USED_CONFIG)
-        except FileNotFoundError:
-            config = Config()
-        return config
-
-    def _create_actions(self):
+        # create actions
         # File and app actions
         self._a_new = QAction("&New", self)
         self._a_new.triggered.connect(self.new_file)
@@ -218,10 +197,10 @@ class MainWindow(QMainWindow):
         self._a_selectall.setShortcut(QKeySequence("Ctrl+a"))
 
         # TODO
-        self._a_goto = QAction("&Go to Line...", self)
-        self._a_goto.triggered.connect(lambda: print("editor.goto_line"))
-        self._a_goto.setShortcut(QKeySequence("Ctrl+g"))
-        self._a_goto.setDisabled(True)
+        # self._a_goto = QAction("&Go to Line...", self)
+        # self._a_goto.triggered.connect(lambda: print("editor.goto_line"))
+        # self._a_goto.setShortcut(QKeySequence("Ctrl+g"))
+        # self._a_goto.setDisabled(True)
 
         # TODO
         self._a_find = QAction("&Find...", self)
@@ -235,25 +214,25 @@ class MainWindow(QMainWindow):
         self._a_replace.setShortcut(QKeySequence("Ctrl+h"))
         self._a_replace.setDisabled(True)
 
-        self._a_insertact = QAction("Insert &Activity", self)
+        self._a_insertact = QAction("&Activity", self)
         self._a_insertact.triggered.connect(self.insert_activity)
-        self._a_insertact.setShortcut(QKeySequence("Ctrl+Shift+a"))
+        self._a_insertact.setShortcut(QKeySequence("Ctrl+Alt+a"))
 
-        self._a_insertedu = QAction("Insert &Education", self)
-        self._a_insertedu.triggered.connect(self.insert_education)
-        self._a_insertedu.setShortcut(QKeySequence("Ctrl+Shift+e"))
-
-        self._a_insertskills = QAction("Insert S&killset", self)
-        self._a_insertskills.triggered.connect(self.insert_skillset)
-        self._a_insertskills.setShortcut(QKeySequence("Ctrl+Shift+k"))
-
-        self._a_inserttest = QAction("Insert &Test", self)
-        self._a_inserttest.triggered.connect(self.insert_test)
-        self._a_inserttest.setShortcut(QKeySequence("Ctrl+Shift+t"))
-
-        self._a_insertaward = QAction("Insert A&ward", self)
+        self._a_insertaward = QAction("Awar&d", self)
         self._a_insertaward.triggered.connect(self.insert_award)
-        self._a_insertaward.setShortcut(QKeySequence("Ctrl+Shift+w"))
+        self._a_insertaward.setShortcut(QKeySequence("Ctrl+Alt+d"))
+
+        self._a_insertedu = QAction("&Education", self)
+        self._a_insertedu.triggered.connect(self.insert_education)
+        self._a_insertedu.setShortcut(QKeySequence("Ctrl+Alt+e"))
+
+        self._a_insertskills = QAction("&Skillset", self)
+        self._a_insertskills.triggered.connect(self.insert_skillset)
+        self._a_insertskills.setShortcut(QKeySequence("Ctrl+Alt+s"))
+
+        self._a_inserttest = QAction("&Test", self)
+        self._a_inserttest.triggered.connect(self.insert_test)
+        self._a_inserttest.setShortcut(QKeySequence("Ctrl+Alt+t"))
 
         # LaTeX actions
         self._a_parse = QAction("&Parse", self)
@@ -298,7 +277,34 @@ class MainWindow(QMainWindow):
         self._a_configdialog.triggered.connect(self.open_config_window)
         self._a_configdialog.setShortcut(QKeySequence("Ctrl+,"))
 
-    def _create_menu(self):
+        self._a_enterprompt = QAction("&Enter Prompt...", self)
+        self._a_enterprompt.triggered.connect(self.open_prompt_window)
+        self._a_enterprompt.setShortcut(QKeySequence("Ctrl+Shift+e"))
+
+        self._gpt_actions = self._create_gpt_actions()
+
+        self._create_menus()
+        self._update_ui_with_config()
+
+        self.editor.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.editor.customContextMenuRequested.connect(self.show_context_menu)
+
+        # Set window properties
+        self.setGeometry(200, 100, 1000, 660)
+        central_widget.setSizes([680, 320])
+        editor_panel.setSizes([450, 150])
+
+        self.new_file()
+        self._load_initial_settings()
+
+    def _get_config(self):
+        try:
+            config = Config.from_json(LAST_USED_CONFIG)
+        except FileNotFoundError:
+            config = Config()
+        return config
+
+    def _create_menus(self):
         # File menu
         file_menu = QMenu("&File", self)
         file_menu.setToolTipsVisible(True)
@@ -328,15 +334,26 @@ class MainWindow(QMainWindow):
         edit_menu.addAction(self._a_paste)
         edit_menu.addSeparator()
         edit_menu.addAction(self._a_selectall)
-        edit_menu.addAction(self._a_goto)
+        # edit_menu.addAction(self._a_goto)
         edit_menu.addAction(self._a_find)
         edit_menu.addAction(self._a_replace)
         edit_menu.addSeparator()
-        edit_menu.addAction(self._a_insertact)
-        edit_menu.addAction(self._a_insertedu)
-        edit_menu.addAction(self._a_insertskills)
-        edit_menu.addAction(self._a_inserttest)
-        edit_menu.addAction(self._a_insertaward)
+
+        insertion_menu = QMenu("&Insert", self)
+        edit_menu.addMenu(insertion_menu)
+        insertion_menu.addAction(self._a_insertact)
+        insertion_menu.addAction(self._a_insertaward)
+        insertion_menu.addAction(self._a_insertedu)
+        insertion_menu.addAction(self._a_insertskills)
+        insertion_menu.addAction(self._a_inserttest)
+
+        gpt_menu = QMenu("Chat&GPT", self)
+        edit_menu.addMenu(gpt_menu)
+        for action in self._gpt_actions:
+            # separate user-defined actions from built-in ones
+            if action is self._a_enterprompt and len(self._gpt_actions) > 1:
+                gpt_menu.addSeparator()
+            gpt_menu.addAction(action)
 
         # LaTeX menu
         latex_menu = QMenu("La&TeX", self)
@@ -364,17 +381,65 @@ class MainWindow(QMainWindow):
 
     def show_context_menu(self, position):
         context_menu = self.editor.createStandardContextMenu()
-        # insertion actions
         context_menu.addSeparator()
-        context_edit_menu = QMenu("Insert", self)
-        context_menu.addMenu(context_edit_menu)
-        context_edit_menu.addAction(self._a_insertact)
-        context_edit_menu.addAction(self._a_insertedu)
-        context_edit_menu.addAction(self._a_insertskills)
-        context_edit_menu.addAction(self._a_inserttest)
-        context_edit_menu.addAction(self._a_insertaward)
-        # TODO gpt actions
+
+        # insertion actions
+        context_insertion_menu = QMenu("Insert", self)
+        context_menu.addMenu(context_insertion_menu)
+        context_insertion_menu.addAction(self._a_insertact)
+        context_insertion_menu.addAction(self._a_insertedu)
+        context_insertion_menu.addAction(self._a_insertskills)
+        context_insertion_menu.addAction(self._a_inserttest)
+        context_insertion_menu.addAction(self._a_insertaward)
+
+        # gpt actions
+        context_gpt_menu = QMenu("ChatGPT", self)
+        context_menu.addMenu(context_gpt_menu)
+        for action in self._gpt_actions:
+            # separate user-defined actions from built-in ones
+            if action is self._a_enterprompt and len(self._gpt_actions) > 1:
+                context_gpt_menu.addSeparator()
+            context_gpt_menu.addAction(action)
+
         context_menu.exec(self.editor.mapToGlobal(position))
+
+    def _create_gpt_actions(self) -> list[QAction]:
+        actions = []
+        try:
+            prompt_filenames = sorted(os.listdir("prompts"))
+        except FileNotFoundError:
+            prompt_filenames = []
+
+        for filename in prompt_filenames:
+            action_name, _ = os.path.splitext(filename)
+            action = QAction(action_name, self)
+            with open(f"prompts/{filename}", encoding="utf-8") as f:
+                prompt_head = f.read().strip()
+
+            def _slot(*_, prompt_head=prompt_head):
+                self._exec_prompt(prompt_head)
+
+            action.triggered.connect(_slot)
+            actions.append(action)
+
+        actions.append(self._a_enterprompt)
+        return actions
+
+    def _exec_prompt(self, prompt_head: str):
+        gpt = chat.Chat(model="gpt-3.5-turbo")
+        prompt_tail = self.editor.get_selected()
+        prompt = f"{prompt_head}\n\n{prompt_tail}".strip()
+        try:
+            self.console.clear()
+            self.console.appendPlainText(f">>> Prompt:\n{prompt}\n")
+            self.console.appendPlainText(f">>> {gpt.model}:")
+            response = ""
+            for content, _ in gpt.get_chunks(prompt, assistant=False):
+                response += content
+            response += "\n>>>"
+            self.console.append(response)
+        except Exception as e:
+            self._handle_exc(e)
 
     def _update_ui_with_config(self):
         # editor font and line wrap
@@ -447,6 +512,8 @@ class MainWindow(QMainWindow):
             settings = self.settings_frame.get_settings()
             settings.to_json(LAST_USED_SETTINGS)
             self._config.to_json(LAST_USED_CONFIG)
+            for w in self._windows:
+                w.close()
             event.accept()
 
     def show_parse_tree(self):
@@ -503,7 +570,7 @@ class MainWindow(QMainWindow):
         # handle errors if any
         if exit_code != 0 or exit_status != QProcess.ExitStatus.NormalExit:
             message = f"{exit_code=}, {exit_status=}"
-            show_error(parent=self, text=f"Sorry, something went wrong.\n{message}")
+            show_error(parent=self, text=f"Sorry, something went wrong.\n\n{message}")
             return
 
         self.console.append("Operation completed successfully.")
@@ -515,7 +582,7 @@ class MainWindow(QMainWindow):
 
     def _handle_exc(self, e: Exception):
         self.console.append(traceback.format_exc())
-        show_error(parent=self, text=f"Oops, something went wrong.\n{e}")
+        show_error(parent=self, text=f"{e.__class__.__name__}\n\n{e}")
 
     def _update_filepath(self):
         if self._filepath:
@@ -558,8 +625,6 @@ class MainWindow(QMainWindow):
             self.setWindowModified(False)
             self._filepath = filepath
             self._update_filepath()
-            # show the parsed json in the console
-            self.show_parse_tree()
 
     def open_file(self):
         filepath, _ = QFileDialog.getOpenFileName(
@@ -681,6 +746,48 @@ class MainWindow(QMainWindow):
 
         w.ok_button.clicked.connect(_get_config)
         w.exec()
+
+    def open_prompt_window(self):
+        w = PromptWindow()
+        w.setWindowTitle("Enter Your Prompt")
+
+        def _run():
+            prompt_head = w.get_prompt()
+            self._exec_prompt(prompt_head)
+
+        w.send.triggered.connect(_run)
+        self._windows.append(w)
+        w.show()
+
+
+class PromptWindow(QDialog):
+    def __init__(self):
+        super().__init__(None, Qt.WindowType.Window)
+        self.send = QAction(self)
+
+        layout = QVBoxLayout()
+        self.setLayout(layout)
+
+        self.editor = QPlainTextEdit(self)
+        self.editor.setFrameShape(QFrame.Shape.NoFrame)
+        self.document = self.editor.document()
+        self.document.setDocumentMargin(6)
+        layout.addWidget(self.editor)
+
+        send_button = QPushButton("Send", self)
+        send_button.clicked.connect(self.send.trigger)
+        send_button.setToolTip("Alternatively, press Ctrl+Return")
+        layout.addWidget(send_button)
+
+        # trigger self.run_action with ctrl+return
+        self.addAction(self.send)
+        self.send.setShortcut(QKeySequence("Ctrl+Return"))
+
+    def get_prompt(self):
+        return self.editor.toPlainText()
+
+    def set_prompt(self, prompt):
+        self.editor.setPlainText(prompt)
 
 
 class ConfigDialog(QDialog):
@@ -1197,6 +1304,9 @@ class CvEditor(QPlainTextEdit):
         self.insertPlainText(text)
         self.ensureCursorVisible()
 
+    def get_selected(self):
+        return self.textCursor().selectedText()
+
 
 class Console(QPlainTextEdit):
     # handles process outputs and supports auto-scrolling
@@ -1248,6 +1358,7 @@ def silent_remove(filepath):
 
 def main():
     app = QApplication(sys.argv)
+    app.setQuitOnLastWindowClosed(True)
     window = MainWindow()
     window.show()
     sys.exit(app.exec())

@@ -173,6 +173,6 @@ tests/test_*.*
 config/last_used.json
 settings/last_used.json
 v*/settings/last_used.json
-gpt/keys.json
+keys.json
 
 .vscode
