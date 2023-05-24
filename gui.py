@@ -18,6 +18,7 @@ from PyQt6.QtWidgets import (
     QMainWindow,
     QMenu,
     QPlainTextEdit,
+    QTextEdit,
     QFrame,
     QDialog,
     QScrollArea,
@@ -431,13 +432,16 @@ class MainWindow(QMainWindow):
         prompt = f"{prompt_head}\n\n{prompt_tail}".strip()
         try:
             self.console.clear()
-            self.console.appendPlainText(f">>> Prompt:\n{prompt}\n")
-            self.console.appendPlainText(f">>> {gpt.model}:")
-            response = ""
+            self.console.append(f"<b>>>> Prompt</b>")
+            self.console.append(prompt)
+            self.console.append("<b>>>></b>")
+            self.console.append(f"<b>>>> {gpt.model}</b>")
+            self.console.append("")
             for content, _ in gpt.get_chunks(prompt, assistant=False):
-                response += content
-            response += "\n>>>"
-            self.console.append(response)
+                self.console.insertPlainText(content)
+                self.console.ensureCursorVisible()
+                QApplication.processEvents()  # force update
+            self.console.append("<b>>>></b>")
         except Exception as e:
             self._handle_exc(e)
 
@@ -468,9 +472,9 @@ class MainWindow(QMainWindow):
         console_font = QFont(self._config.console_font, self._config.console_font_size)
         self.console.setFont(console_font)
         if self._config.console_wrap_lines:
-            self.console.setLineWrapMode(QPlainTextEdit.LineWrapMode.WidgetWidth)
+            self.console.setLineWrapMode(QTextEdit.LineWrapMode.WidgetWidth)
         else:
-            self.console.setLineWrapMode(QPlainTextEdit.LineWrapMode.NoWrap)
+            self.console.setLineWrapMode(QTextEdit.LineWrapMode.WidgetWidth)
 
         # console foreground & background
         console_palette = self.console.palette()
@@ -1308,14 +1312,12 @@ class CvEditor(QPlainTextEdit):
         return self.textCursor().selectedText()
 
 
-class Console(QPlainTextEdit):
+class Console(QTextEdit):
     # handles process outputs and supports auto-scrolling
 
     def append(self, text: str):
-        self.appendPlainText(text)
-        # scroll to bottom
-        vbar = self.verticalScrollBar()
-        vbar.setValue(vbar.maximum())
+        super().append(text)
+        self.ensureCursorVisible()
 
 
 def _ask_yesno(
