@@ -9,9 +9,9 @@ from PyQt6.QtGui import (
     QAction,
     QKeySequence,
     QFont,
-    QColor,
-    QPalette,
     QCloseEvent,
+    QFontMetrics,
+    QShortcut,
 )
 from PyQt6.QtWidgets import (
     QApplication,
@@ -50,6 +50,12 @@ LAST_USED_CONFIG = "config/last_used.json"
 
 @dataclasses.dataclass
 class Config:
+    # window geometry
+    window_x: int = 200
+    window_y: int = 100
+    window_width: int = 1000
+    window_height: int = 660
+
     # editor
     editor_font: str = "Consolas"
     editor_font_size: int = 10
@@ -73,8 +79,8 @@ class Config:
     # console
     console_font: str = "Consolas"
     console_font_size: int = 10
-    console_foreground: str = "#205e80"
-    console_background: str = "#f5f5f5"
+    console_foreground: str = "#205E80"
+    console_background: str = "#F8F6F2"
     console_wrap_lines: bool = True
 
     # file system
@@ -112,6 +118,7 @@ class MainWindow(QMainWindow):
 
         # Editor
         self.editor = CvEditor(self)
+        self.editor.setObjectName("editor")
         self.editor.setFrameShape(QFrame.Shape.NoFrame)
         self.document = self.editor.document()
         self.document.setDocumentMargin(6)
@@ -120,7 +127,9 @@ class MainWindow(QMainWindow):
 
         # Console
         self.console = Console(self)
+        self.console.setObjectName("console")
         self.console.setFrameShape(QFrame.Shape.NoFrame)
+        self.console.document().setDocumentMargin(6)
         self.console.setReadOnly(True)
         editor_panel.addWidget(self.console)
 
@@ -144,16 +153,15 @@ class MainWindow(QMainWindow):
 
         button_frame = QFrame(self)
         control_panel_layout.addWidget(button_frame)
-        button_frame_layout = QGridLayout()
+        button_frame_layout = QHBoxLayout()
         button_frame.setLayout(button_frame_layout)
 
-        parse_button = QPushButton("Parse", self)
-        parse_button.clicked.connect(self.show_parse_tree)
-        parse_button.setToolTip("Show the parse tree in the log window")
-        button_frame_layout.addWidget(parse_button, 0, 0)
         self.run_button = QPushButton("Run LaTeX", self)
         self.run_button.clicked.connect(self.run_latex)
-        button_frame_layout.addWidget(self.run_button, 0, 1)
+        self.run_button.setMinimumWidth(120)
+        button_frame_layout.addWidget(
+            self.run_button, alignment=Qt.AlignmentFlag.AlignRight
+        )
 
         # create actions
         # File and app actions
@@ -210,6 +218,17 @@ class MainWindow(QMainWindow):
         self._a_selectall = QAction("Select &All", self)
         self._a_selectall.triggered.connect(self.editor.selectAll)
         self._a_selectall.setShortcut(QKeySequence("Ctrl+a"))
+
+        # avoid breaking counterpart bindings in the console
+        for action in [
+            self._a_undo,
+            self._a_redo,
+            self._a_cut,
+            self._a_copy,
+            self._a_paste,
+            self._a_selectall,
+        ]:
+            action.setShortcutContext(Qt.ShortcutContext.WidgetShortcut)
 
         # TODO
         # self._a_goto = QAction("&Go to Line...", self)
@@ -305,7 +324,12 @@ class MainWindow(QMainWindow):
         self.editor.customContextMenuRequested.connect(self.show_context_menu)
 
         # Set window properties
-        self.setGeometry(200, 100, 1000, 660)
+        self.setGeometry(
+            self._config.window_x,
+            self._config.window_y,
+            self._config.window_width,
+            self._config.window_height,
+        )
         central_widget.setSizes([680, 320])
         editor_panel.setSizes([450, 150])
 
@@ -476,18 +500,12 @@ class MainWindow(QMainWindow):
             self.editor.setLineWrapMode(QPlainTextEdit.LineWrapMode.NoWrap)
 
         # editor foreground & background
-        editor_palette = self.editor.palette()
-        editor_palette.setColor(
-            QPalette.ColorGroup.Normal,
-            QPalette.ColorRole.Base,
-            QColor(self._config.editor_background),
+        editor_fg = f"color: {self._config.editor_foreground};"
+        editor_bg = f"background: {self._config.editor_background};"
+        self.editor.setStyleSheet(
+            f"#editor {{{editor_fg} {editor_bg}}} "
+            f"#editor:focus {{{editor_fg} {editor_bg}}}"
         )
-        editor_palette.setColor(
-            QPalette.ColorGroup.Normal,
-            QPalette.ColorRole.Text,
-            QColor(self._config.editor_foreground),
-        )
-        self.editor.setPalette(editor_palette)
 
         # console font and line wrap
         console_font = QFont(self._config.console_font, self._config.console_font_size)
@@ -498,18 +516,12 @@ class MainWindow(QMainWindow):
             self.console.setLineWrapMode(QTextEdit.LineWrapMode.WidgetWidth)
 
         # console foreground & background
-        console_palette = self.console.palette()
-        console_palette.setColor(
-            QPalette.ColorGroup.Normal,
-            QPalette.ColorRole.Base,
-            QColor(self._config.console_background),
+        console_fg = f"color: {self._config.console_foreground};"
+        console_bg = f"background: {self._config.console_background};"
+        self.console.setStyleSheet(
+            f"#console {{{console_fg} {console_bg}}} "
+            f"#console:focus {{{console_fg} {console_bg}}}"
         )
-        console_palette.setColor(
-            QPalette.ColorGroup.Normal,
-            QPalette.ColorRole.Text,
-            QColor(self._config.console_foreground),
-        )
-        self.console.setPalette(console_palette)
 
         # menu items
         self._a_togglewrap.setChecked(self._config.editor_wrap_lines)
@@ -566,9 +578,15 @@ class MainWindow(QMainWindow):
         ):
             event.ignore()
         else:
-            # Save current settings and config
+            # Save current settings
             settings = self.settings_frame.get_settings()
             settings.to_json(LAST_USED_SETTINGS)
+            # Save current config; with update window geometry too
+            window_rect = self.geometry()
+            self._config.window_x = window_rect.x()
+            self._config.window_y = window_rect.y()
+            self._config.window_width = window_rect.width()
+            self._config.window_height = window_rect.height()
             self._config.to_json(LAST_USED_CONFIG)
             for w in self._gpt_windows:
                 w.close()
@@ -646,7 +664,11 @@ class MainWindow(QMainWindow):
         if self._filepath:
             filename = os.path.basename(self._filepath)
             self._a_reload.setDisabled(False)
-            self._a_reload.setText(f"Reload {filename}")
+            font_metrics = QFontMetrics(self._a_reload.font())
+            path_text = font_metrics.elidedText(
+                filename, Qt.TextElideMode.ElideMiddle, 150
+            )
+            self._a_reload.setText(f"Reload {path_text}")
         else:
             filename = "untitled"
             self._a_reload.setDisabled(True)
@@ -808,6 +830,7 @@ class MainWindow(QMainWindow):
     def open_prompt_window(self):
         w = GptWindow()
         w.setWindowTitle("Enter Your Prompt")
+        w.resize(400, 320)
 
         def _run():
             prompt_head = w.get_prompt()
@@ -828,14 +851,19 @@ class GptWindow(QDialog):
 
         self.editor = QPlainTextEdit(self)
         self.editor.setFrameShape(QFrame.Shape.NoFrame)
-        self.document = self.editor.document()
-        self.document.setDocumentMargin(6)
+        self.editor.document().setDocumentMargin(6)
         layout.addWidget(self.editor)
 
+        button_frame = QFrame(self)
+        layout.addWidget(button_frame)
+        button_frame_layout = QHBoxLayout()
+        button_frame.setLayout(button_frame_layout)
         self.send_button = QPushButton("Send", self)
         self.send_button.clicked.connect(self.send.trigger)
         self.send_button.setToolTip("Alternatively, press Ctrl+Return")
-        layout.addWidget(self.send_button)
+        button_frame_layout.addWidget(
+            self.send_button, alignment=Qt.AlignmentFlag.AlignRight
+        )
 
         # trigger self.run_action with ctrl+return
         self.addAction(self.send)
