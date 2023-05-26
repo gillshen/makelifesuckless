@@ -4,7 +4,7 @@ import traceback
 import dataclasses
 import json
 
-from PyQt6.QtCore import Qt, QProcess
+from PyQt6.QtCore import Qt, QProcess, QThread, pyqtSignal
 from PyQt6.QtGui import (
     QAction,
     QKeySequence,
@@ -99,7 +99,7 @@ class MainWindow(QMainWindow):
 
         self._filepath = ""
         self._config = self._get_config()
-        self._windows = []  # stand-alone prompt windows
+        self._gpt_windows = []  # stand-alone prompt windows
         self.menubar = self.menuBar()
 
         # Main widget
@@ -441,26 +441,30 @@ class MainWindow(QMainWindow):
         return menu
 
     def _exec_prompt(self, prompt_head: str):
+        thread = GptThread(self)
+
+        def _on_success():
+            self._gpt_menu.setEnabled(True)
+            self._set_gpt_enabled(True)
+
+        def _on_error(e: Exception):
+            self._handle_exc(e)
+            self._set_gpt_enabled(True)
+
+        thread.finished.connect(_on_success)
+        thread.error.connect(_on_error)
+
         gpt = chat.Chat(model="gpt-3.5-turbo")
         prompt_tail = self.editor.get_selected()
         prompt = f"{prompt_head}\n\n{prompt_tail}".strip()
-        try:
-            self.console.clear()
-            self.console.append(f"<b>>>> Prompt</b>")
-            self.console.append(prompt)
-            self.console.append("<b>>>></b>")
-            QApplication.processEvents()
+        self._set_gpt_enabled(False)
+        self.console.clear()
+        thread.run(gpt=gpt, prompt=prompt, console=self.console)
 
-            self.console.append(f"<b>>>> {gpt.model}</b>")
-            self.console.append("")
-            for content, _ in gpt.get_chunks(prompt, assistant=False):
-                self.console.insertPlainText(content)
-                self.console.ensureCursorVisible()
-                QApplication.processEvents()  # force update
-            self.console.append("<b>>>></b>")
-
-        except Exception as e:
-            self._handle_exc(e)
+    def _set_gpt_enabled(self, enabled: bool = True):
+        self._gpt_menu.setEnabled(enabled)
+        for w in self._gpt_windows:
+            w.send_button.setEnabled(enabled)
 
     def _update_ui_with_config(self):
         # editor font and line wrap
@@ -566,7 +570,7 @@ class MainWindow(QMainWindow):
             settings = self.settings_frame.get_settings()
             settings.to_json(LAST_USED_SETTINGS)
             self._config.to_json(LAST_USED_CONFIG)
-            for w in self._windows:
+            for w in self._gpt_windows:
                 w.close()
             event.accept()
 
@@ -802,7 +806,7 @@ class MainWindow(QMainWindow):
         w.exec()
 
     def open_prompt_window(self):
-        w = PromptWindow()
+        w = GptWindow()
         w.setWindowTitle("Enter Your Prompt")
 
         def _run():
@@ -810,11 +814,11 @@ class MainWindow(QMainWindow):
             self._exec_prompt(prompt_head)
 
         w.send.triggered.connect(_run)
-        self._windows.append(w)
+        self._gpt_windows.append(w)
         w.show()
 
 
-class PromptWindow(QDialog):
+class GptWindow(QDialog):
     def __init__(self):
         super().__init__(None, Qt.WindowType.Window)
         self.send = QAction(self)
@@ -828,10 +832,10 @@ class PromptWindow(QDialog):
         self.document.setDocumentMargin(6)
         layout.addWidget(self.editor)
 
-        send_button = QPushButton("Send", self)
-        send_button.clicked.connect(self.send.trigger)
-        send_button.setToolTip("Alternatively, press Ctrl+Return")
-        layout.addWidget(send_button)
+        self.send_button = QPushButton("Send", self)
+        self.send_button.clicked.connect(self.send.trigger)
+        self.send_button.setToolTip("Alternatively, press Ctrl+Return")
+        layout.addWidget(self.send_button)
 
         # trigger self.run_action with ctrl+return
         self.addAction(self.send)
@@ -1367,6 +1371,30 @@ class Console(QTextEdit):
     def append(self, text: str):
         super().append(text)
         self.ensureCursorVisible()
+
+
+class GptThread(QThread):
+    finished = pyqtSignal()
+    error = pyqtSignal(Exception)
+
+    def run(self, gpt: chat.Chat, prompt: str, console: Console):
+        try:
+            console.append(f"<b>>>> Prompt</b>")
+            console.append(prompt)
+            console.append("<b>>>></b>")
+            QApplication.processEvents()  # force update
+
+            console.append(f"<b>>>> {gpt.model}</b>")
+            console.append("")
+            for content, _ in gpt.get_chunks(prompt, assistant=False):
+                console.insertPlainText(content)
+                console.ensureCursorVisible()
+                QApplication.processEvents()  # force update
+            console.append("<b>>>></b>")
+            self.finished.emit()
+
+        except Exception as e:
+            self.error.emit(e)
 
 
 def _ask_yesno(
