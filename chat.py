@@ -2,12 +2,15 @@ import json
 
 import openai
 
-with open("keys.json", encoding="utf-8") as creds_file:
-    creds = json.load(creds_file)
-
-cred = creds[0]
-openai.api_key = cred["key"]
-openai.api_base = cred["base"]
+try:
+    with open("keys.json", encoding="utf-8") as creds_file:
+        creds = json.load(creds_file)
+    cred = creds[0]
+    openai.api_key = cred["key"]
+    openai.api_base = cred["base"]
+except FileNotFoundError:
+    openai.api_key = ""
+    openai.api_base = ""
 
 
 class Chat:

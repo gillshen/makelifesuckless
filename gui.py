@@ -348,13 +348,9 @@ class MainWindow(QMainWindow):
         insertion_menu.addAction(self._a_insertskills)
         insertion_menu.addAction(self._a_inserttest)
 
-        gpt_menu = QMenu("Chat&GPT", self)
-        edit_menu.addMenu(gpt_menu)
-        for action in self._gpt_actions:
-            # separate user-defined actions from built-in ones
-            if action is self._a_enterprompt and len(self._gpt_actions) > 1:
-                gpt_menu.addSeparator()
-            gpt_menu.addAction(action)
+        # ChatGPT menu
+        self._gpt_menu = self._create_gpt_menu()
+        self.menubar.addMenu(self._gpt_menu)
 
         # LaTeX menu
         latex_menu = QMenu("La&TeX", self)
@@ -392,15 +388,8 @@ class MainWindow(QMainWindow):
         context_insertion_menu.addAction(self._a_insertskills)
         context_insertion_menu.addAction(self._a_inserttest)
         context_insertion_menu.addAction(self._a_insertaward)
-
-        # gpt actions
-        context_gpt_menu = QMenu("ChatGPT", self)
-        context_menu.addMenu(context_gpt_menu)
-        for action in self._gpt_actions:
-            # separate user-defined actions from built-in ones
-            if action is self._a_enterprompt and len(self._gpt_actions) > 1:
-                context_gpt_menu.addSeparator()
-            context_gpt_menu.addAction(action)
+        # gpt menu and actions
+        context_menu.addMenu(self._gpt_menu)
 
         context_menu.exec(self.editor.mapToGlobal(position))
 
@@ -426,6 +415,17 @@ class MainWindow(QMainWindow):
         actions.append(self._a_enterprompt)
         return actions
 
+    def _create_gpt_menu(self) -> QMenu:
+        menu = QMenu("Chat&GPT", self)
+        for i, action in enumerate(self._gpt_actions):
+            # separate user-defined actions from built-in ones
+            if i and action is self._a_enterprompt:
+                menu.addSeparator()
+            menu.addAction(action)
+        if not chat.openai.api_key:
+            menu.setDisabled(True)
+        return menu
+
     def _exec_prompt(self, prompt_head: str):
         gpt = chat.Chat(model="gpt-3.5-turbo")
         prompt_tail = self.editor.get_selected()
@@ -435,6 +435,8 @@ class MainWindow(QMainWindow):
             self.console.append(f"<b>>>> Prompt</b>")
             self.console.append(prompt)
             self.console.append("<b>>>></b>")
+            QApplication.processEvents()
+
             self.console.append(f"<b>>>> {gpt.model}</b>")
             self.console.append("")
             for content, _ in gpt.get_chunks(prompt, assistant=False):
@@ -442,6 +444,7 @@ class MainWindow(QMainWindow):
                 self.console.ensureCursorVisible()
                 QApplication.processEvents()  # force update
             self.console.append("<b>>>></b>")
+
         except Exception as e:
             self._handle_exc(e)
 
