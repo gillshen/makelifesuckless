@@ -1,7 +1,7 @@
 import re
 
-from PyQt6.QtWidgets import QApplication, QMainWindow, QPlainTextEdit
-from PyQt6.QtGui import QSyntaxHighlighter, QTextCharFormat, QFont, QColor
+from PyQt6.QtWidgets import QPlainTextEdit
+from PyQt6.QtGui import QSyntaxHighlighter, QTextCharFormat, QColor
 
 
 KEY_WORDS = sorted(
@@ -43,8 +43,8 @@ _DATE_KWS = [kw for kw in KEY_WORDS if kw.endswith("date")]
 class CvEditor(QPlainTextEdit):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self._highlighter = CvSyntaxHighlighter(self)
-        self._highlighter.setDocument(self.document())
+        self.highlighter = CvSyntaxHighlighter(self)
+        self.highlighter.setDocument(self.document())
 
     def insert(self, text: str):
         self.insertPlainText(text)
@@ -66,29 +66,40 @@ class CvSyntaxHighlighter(QSyntaxHighlighter):
 
     DEFAULT = QTextCharFormat()
     KEYWORD = QTextCharFormat()
+    BULLET = QTextCharFormat()
     DATE = QTextCharFormat()
     SECTION = QTextCharFormat()
     UNKNOWN = QTextCharFormat()
 
-    def __init__(self, parent):
-        super().__init__(parent)
-        self.update_format(self.DEFAULT)
-        self.update_format(self.KEYWORD, foreground="#1E90FF", bold=True)  # dodger blue
-        self.update_format(self.DATE, foreground="#DA70D6", bold=True)  # orchid
-        self.update_format(self.SECTION, foreground="#9400D3", bold=True)  # dark orchid
-        self.update_format(self.UNKNOWN, foreground="#FFA500")  # orange
-
     @staticmethod
-    def update_format(text_format: QTextCharFormat, foreground="#000000", bold=False):
-        text_format.setForeground(QColor(foreground))
-        text_format.setFontWeight(700 if bold else 400)
+    def update_format(
+        text_format: QTextCharFormat,
+        foreground=None,
+        background=None,
+        bold=None,
+        italic=None,
+        underline=None,
+    ):
+        if foreground is not None:
+            text_format.setForeground(QColor(foreground))
+        if background is not None:
+            text_format.setBackground(QColor(background))
+        if bold is not None:
+            text_format.setFontWeight(700 if bold else 400)
+        if italic is not None:
+            text_format.setFontItalic(italic)
+        if underline is not None:
+            text_format.setFontUnderline(underline)
 
     def highlightBlock(self, text):
         for pattern, name in self._PATTERNS.items():
             for match in re.finditer(pattern, text, flags=re.IGNORECASE):
                 span = match.span()
-                if name in ("keyword-text", "bullet-text"):
+                if name == "keyword-text":
                     self.setFormat(*match.span(1), self.KEYWORD)
+                    self.setFormat(*match.span(2), self.DEFAULT)
+                elif name == "bullet-text":
+                    self.setFormat(*match.span(1), self.BULLET)
                     self.setFormat(*match.span(2), self.DEFAULT)
                 elif name == "date":
                     self.setFormat(*match.span(1), self.DATE)
@@ -98,23 +109,3 @@ class CvSyntaxHighlighter(QSyntaxHighlighter):
                     self.setFormat(*span, self.UNKNOWN)
                 else:
                     raise ValueError(name)
-
-
-def _test():
-    app = QApplication([])
-    window = QMainWindow()
-    editor = CvEditor(window)
-    window.setCentralWidget(editor)
-
-    editor.setFont(QFont("Consolas", 10))
-    editor.document().setDocumentMargin(10)
-    with open("tests/sample1.txt", encoding="utf-8") as f:
-        editor.setPlainText(f.read())
-
-    window.setGeometry(200, 100, 800, 660)
-    window.show()
-    app.exec()
-
-
-if __name__ == "__main__":
-    _test()

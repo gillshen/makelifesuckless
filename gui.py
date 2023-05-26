@@ -57,11 +57,24 @@ class Config:
     editor_background: str = "#ffffff"
     editor_wrap_lines: bool = True
 
+    # syntax highlighting
+    cv_default_foreground: str = "#000000"
+    cv_keyword_foreground: str = "#1E90FF"  # dodger blue
+    cv_keyword_bold: bool = True
+    cv_bullet_foreground: str = "#DC143C"  # crimson
+    cv_bullet_bold: bool = True
+    cv_date_foreground: str = "#DA70D6"  # orchid
+    cv_date_bold: bool = True
+    cv_section_foreground: str = "#9400D3"  # dark orchid
+    cv_section_bold: bool = True
+    cv_unknown_foreground = "#FFA500"  # orange
+    cv_unknown_bold: bool = False
+
     # console
     console_font: str = "Consolas"
     console_font_size: int = 10
     console_foreground: str = "#205e80"
-    console_background: str = "#f7f7f7"
+    console_background: str = "#f5f5f5"
     console_wrap_lines: bool = True
 
     # file system
@@ -253,7 +266,7 @@ class MainWindow(QMainWindow):
 
         self._a_exportsettings = QAction("&Export Settings...", self)
         self._a_exportsettings.triggered.connect(self.export_settings)
-        self._a_exportsettings.setShortcut(QKeySequence("Ctrl+e"))
+        self._a_exportsettings.setShortcut(QKeySequence("Ctrl+Shift+e"))
         self._a_exportsettings.setToolTip("Save current LaTeX settings to a file")
 
         self._a_restoredefault = QAction("Restore &Default", self)
@@ -281,7 +294,7 @@ class MainWindow(QMainWindow):
 
         self._a_enterprompt = QAction("&Enter Prompt...", self)
         self._a_enterprompt.triggered.connect(self.open_prompt_window)
-        self._a_enterprompt.setShortcut(QKeySequence("Ctrl+Shift+e"))
+        self._a_enterprompt.setShortcut(QKeySequence("Ctrl+e"))
 
         self._gpt_actions = self._create_gpt_actions()
 
@@ -496,6 +509,39 @@ class MainWindow(QMainWindow):
 
         # menu items
         self._a_togglewrap.setChecked(self._config.editor_wrap_lines)
+
+        # syntax highlighting
+        # TODO make configurable
+        highlighter = self.editor.highlighter
+        highlighter.update_format(
+            highlighter.DEFAULT,
+            foreground=self._config.cv_default_foreground,
+        )
+        highlighter.update_format(
+            highlighter.KEYWORD,
+            foreground=self._config.cv_keyword_foreground,
+            bold=self._config.cv_keyword_bold,
+        )
+        highlighter.update_format(
+            highlighter.BULLET,
+            foreground=self._config.cv_bullet_foreground,
+            bold=self._config.cv_bullet_bold,
+        )
+        highlighter.update_format(
+            highlighter.DATE,
+            foreground=self._config.cv_date_foreground,
+            bold=self._config.cv_date_bold,
+        )
+        highlighter.update_format(
+            highlighter.SECTION,
+            foreground=self._config.cv_section_foreground,
+            bold=self._config.cv_section_bold,
+        )
+        highlighter.update_format(
+            highlighter.UNKNOWN,
+            foreground=self._config.cv_unknown_foreground,
+            bold=self._config.cv_unknown_bold,
+        )
 
     def _load_initial_settings(self):
         try:
@@ -1180,7 +1226,10 @@ class SettingsFrame(QFrame):
 
 
 class LatexPaperSelector(QComboBox):
-    _text_to_paper = {"A4": "a4paper", "Letter": "letterpaper"}
+    _text_to_paper = {
+        "A4": "a4paper",
+        "Letter": "letterpaper",
+    }
     _paper_to_text = {v: k for k, v in _text_to_paper.items()}
 
     def __init__(self, parent=None):
@@ -1195,7 +1244,14 @@ class LatexPaperSelector(QComboBox):
 
 
 class LatexFontSizeSelector(QSpinBox):
-    _commands = ["normalsize", "large", "Large", "LARGE", "huge", "Huge"]
+    _commands = [
+        "normalsize",
+        "large",
+        "Large",
+        "LARGE",
+        "huge",
+        "Huge",
+    ]
     _value_to_command = dict(enumerate(_commands, start=1))
     _command_to_value = {v: k for k, v in _value_to_command.items()}
 
@@ -1271,7 +1327,7 @@ class LatexColorSelector(QComboBox):
 class DateFormatSelector(QComboBox):
     _sample_date = txtparse.SmartDate(year=2022, month=11, day=1)
     _sample_to_style = {}
-    for style in [
+    for _style in [
         "american",
         "american long",
         "american slash",
@@ -1281,11 +1337,11 @@ class DateFormatSelector(QComboBox):
         "iso",
         "yyyy/mm/dd",
     ]:
-        key = tex.format_date(_sample_date, style=style)
-        _sample_to_style[key] = style
+        _key = tex.format_date(_sample_date, style=_style)
+        _sample_to_style[_key] = _style
 
-    del style
-    del key
+    del _style
+    del _key
 
     def __init__(self, parent=None):
         super().__init__(parent)
