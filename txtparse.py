@@ -157,7 +157,7 @@ class SmartDate:
         # try splitting with '-' or '/' or '.'
         # if splitting into two or three: try yyyy-mm or yyyy-mm-dd
         # if splitting into one: try year; if not, fallback
-        mo = re.match(r"^(\d{4})(?:([-./])([01]?[0-9]))?(?:\2([0-3]?[0-9]))?$", s)
+        mo = re.match(r"^(\d{4})(?:([-./])([01]?[0-9])(?:\2([0-3]?[0-9]))?)?$", s)
         if mo is None:
             return cls(fallback=s)
 

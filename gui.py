@@ -41,6 +41,7 @@ from PyQt6.QtWidgets import (
 import txtparse
 import tex
 import chat
+from cveditor import CvEditor
 
 APP_TITLE = "Curriculum Victim"
 LAST_USED_SETTINGS = "settings/last_used.json"
@@ -51,7 +52,7 @@ LAST_USED_CONFIG = "config/last_used.json"
 class Config:
     # editor
     editor_font: str = "Consolas"
-    editor_font_size: int = 12
+    editor_font_size: int = 10
     editor_foreground: str = "#000000"
     editor_background: str = "#ffffff"
     editor_wrap_lines: bool = True
@@ -416,7 +417,7 @@ class MainWindow(QMainWindow):
         return actions
 
     def _create_gpt_menu(self) -> QMenu:
-        menu = QMenu("Chat&GPT", self)
+        menu = QMenu("&ChatGPT", self)
         for i, action in enumerate(self._gpt_actions):
             # separate user-defined actions from built-in ones
             if i and action is self._a_enterprompt:
@@ -1302,17 +1303,6 @@ class Separator(QFrame):
         super().__init__(parent)
         self.setFrameShape(QFrame.Shape.HLine)
         self.setFrameShadow(QFrame.Shadow.Sunken)
-
-
-class CvEditor(QPlainTextEdit):
-    # supports auto-scrolling
-
-    def insert(self, text: str):
-        self.insertPlainText(text)
-        self.ensureCursorVisible()
-
-    def get_selected(self):
-        return self.textCursor().selectedText()
 
 
 class Console(QTextEdit):
