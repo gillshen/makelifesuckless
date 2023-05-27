@@ -9,17 +9,19 @@ degree: Master in Mathematics & Computer Science
 start date: 1981-09
 end date: 1982
 gpa: \textsc{unknown}
+rank: 1/42
 
 school: University of Amsterdam
 loc: Amsterdam, The Netherlands
-degree: Bachelor of Science
-major: Computer Science
+degree: B.S. in Computer Science
+minor: Mathematics
 start date: 1977-09
 end date: 1981-06-30
 
 school: Amsterdam Day Care
-start date: 1970-01-01
-end date: 1970-01-02
+start date: 1965-01-01
+end date: 1965-01-02
+rank: kick-ass
 
 # Work Experience
 

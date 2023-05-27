@@ -32,6 +32,7 @@ DEGREE = _compile("degree")
 MAJOR = _compile("major")
 MINOR = _compile("minor")
 GPA = _compile("gpa")
+RANK = _compile("rank")
 COURSES = _compile("courses")
 
 ROLE = _compile("role")
@@ -61,6 +62,7 @@ Degree:
 Major: 
 Minor: 
 GPA: 
+Rank: 
 Courses: 
 """
 
@@ -191,6 +193,7 @@ class Education:
     major: str = ""
     minor: str = ""
     gpa: str = ""
+    rank: str = ""
     courses: str = ""
 
 
@@ -307,6 +310,8 @@ def parse(src: str) -> tuple[CV, list[str]]:
                 curren_data_object.minor = minor
             elif (gpa := _match(GPA, line)) is not None:
                 curren_data_object.gpa = gpa
+            elif (rank := _match(RANK, line)) is not None:
+                curren_data_object.rank = rank
             elif (courses := _match(COURSES, line)) is not None:
                 curren_data_object.courses = courses
 

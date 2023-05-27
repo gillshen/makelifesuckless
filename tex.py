@@ -89,11 +89,12 @@ def render(*, template_path: str, cv: CV, settings: Settings):
     return template.render(cv=cv, settings=settings)
 
 
-# Generic filter:
-# - escape special characters
-# - correct quotes
-# - implement markdown syntax for italic, bold, and url
 def to_latex(s: str):
+    # Generic filter:
+    # - escape special characters
+    # - correct quotes
+    # - implement markdown syntax for italic, bold, and url
+
     # preserve escaped asterisks
     s = s.replace("\\*", '{\\char"002A}')
 
@@ -120,6 +121,16 @@ def to_latex(s: str):
 
 
 ENVIRONMENT.filters["to_latex"] = to_latex
+
+
+def null_or_prefixed(s: str, prefix: str) -> str:
+    if s:
+        return f"{prefix}{s}"
+    else:
+        return ""
+
+
+ENVIRONMENT.filters["null_or_prefixed"] = null_or_prefixed
 
 
 def format_date(

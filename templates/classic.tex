@@ -69,33 +69,76 @@
 }
 
 \makeatletter
+
+\def\ifnotempty#1#2#3{\def\temp{}\ifx#1\temp#3\else#2\fi}
+\def\hideifempty#1#2{\def\temp{}\ifx#1\temp\else#2\fi}
+
 \define@key{edukeys}{loc}{\def\edu@loc{#1}}
 \define@key{edukeys}{date}{\def\edu@date{#1}}
 \define@key{edukeys}{degree}{\def\edu@degree{#1}}
 \define@key{edukeys}{major}{\def\edu@major{#1}}
 \define@key{edukeys}{minor}{\def\edu@minor{#1}}
 \define@key{edukeys}{gpa}{\def\edu@gpa{#1}}
+\define@key{edukeys}{rank}{\def\edu@rank{#1}}
 \define@key{edukeys}{courses}{\def\edu@courses{#1}}
 
 \newcommand{\edu}[2]{%
     \begingroup%
-    \setkeys{edukeys}{loc=, date=, degree=, major=, minor=, gpa=, courses=, #2}%
-    \def\mmg{% major, minor, gpa
-        \ifx\edu@major\empty{%
-            \ifx\edu@gpa\empty\else{GPA: \edu@gpa}\fi}%
-        \else{%
-            Major: \edu@major%
-            \ifx\edu@minor\empty\else{; Minor: \edu@minor}\fi%
-            \ifx\edu@gpa\empty\else{; GPA: \edu@gpa}\fi}%
-        \fi%
+    \setkeys{edukeys}{loc=, date=, degree=, major=, minor=, gpa=, rank=, courses=, #2}%
+    \def\gparank{%
+    	\ifnotempty{\edu@gpa}{%
+    		\edu@gpa%
+            \hideifempty{\edu@rank}{; }\edu@rank%
+    	}{%
+    		\edu@rank%
+    	}%
     }
-    \textbf{#1}\hfill\edu@loc\par
-    \ifx\edu@degree\empty{\mmg}\else{\edu@degree}\fi%
+	\newif\ifgparankshown
+	\newif\ifcoursesshown
+    % first row: school ... ifnull(loc, date)
+    \textbf{#1}%
+    \hfill%
+    \ifnotempty{\edu@loc}{\edu@loc}{\edu@date}\par
+    % second row
+    \ifnotempty{\edu@degree}{%
+    	% if degree is not empty: degree[; major][; minor]
+    	\edu@degree%
+    	\hideifempty{\edu@major}{; }\edu@major%
+    	\hideifempty{\edu@minor}{; }\edu@minor%
+    }{%
+    	% if degree is empty
+    	\gparankshowntrue%
+    	\ifnotempty{\edu@major}{%
+    		% if major is not empty: major[; minor][; gpa][; rank]
+    		\edu@major%
+    		\hideifempty{\edu@minor}{; }\edu@minor%
+    		\hideifempty{\edu@gpa\edu@rank}{; }\gparank%
+    	}{%
+    		% if major is empty
+    		\ifnotempty{\edu@minor}{%
+    			% if minor is not empty: minor[; gpa][; rank]
+    			\edu@minor%
+    			\hideifempty{\edu@gpa\edu@rank}{; }\gparank%
+    		}{%
+    			% if minor is empty
+    			\ifnotempty{\edu@gpa\edu@rank}{%
+    				% if either gpa or rank is not empty
+    				\gparank%
+    			}{%
+    				% if both gpa and rank are empty
+    				\coursesshowntrue%
+    				\edu@courses%
+    			}%
+    		}%
+    	}%
+	}%
     \hfill
-    \edu@date\par
-    \ifx\edu@degree\empty\else{\mmg\par}\fi%
-    \ifx\edu@courses\empty\else{Courses: \edu@courses\par}\fi
-    \endgroup\par\addvspace{\postentryskip}
+    \ifnotempty{\edu@loc}{\edu@date}{}\par
+    % show gpa and rank if not already
+    \ifgparankshown\else\gparank\par\fi
+    % show courses if not already
+    \ifcoursesshown\else\edu@courses\par\fi
+    \endgroup\addvspace{\postentryskip}
 }
 
 \define@key{activitykeys}{role}{\def\activity@role{#1}}
@@ -147,10 +190,11 @@
     loc={<< edu.loc|to_latex >>},
     date={<< edu.start_date|format_date(settings.date_style, edu.end_date) >>},
     degree={<< edu.degree|to_latex >>},
-    major={<< edu.major|to_latex >>},
-    minor={<< edu.minor|to_latex >>},
-    gpa={<< edu.gpa|to_latex >>},
-    courses={<< edu.courses|to_latex >>}
+    major={<< edu.major|to_latex|null_or_prefixed("Major: ") >>},
+    minor={<< edu.minor|to_latex|null_or_prefixed("Minor: ") >>},
+    gpa={<< edu.gpa|to_latex|null_or_prefixed("GPA: ") >>},
+    rank={<< edu.rank|to_latex|null_or_prefixed("Rank: ") >>},
+    courses={<< edu.courses|to_latex|null_or_prefixed("Courses: ") >>}
 }
 <!- endfor !>
 <! for test in cv.tests !>

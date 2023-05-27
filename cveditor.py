@@ -94,7 +94,6 @@ class CvSyntaxHighlighter(QSyntaxHighlighter):
     def highlightBlock(self, text):
         for pattern, name in self._PATTERNS.items():
             for match in re.finditer(pattern, text, flags=re.IGNORECASE):
-                span = match.span()
                 if name == "keyword-text":
                     self.setFormat(*match.span(1), self.KEYWORD)
                     self.setFormat(*match.span(2), self.DEFAULT)
@@ -104,8 +103,8 @@ class CvSyntaxHighlighter(QSyntaxHighlighter):
                 elif name == "date":
                     self.setFormat(*match.span(1), self.DATE)
                 elif name == "section-text":
-                    self.setFormat(*span, self.SECTION)
+                    self.setFormat(*match.span(), self.SECTION)
                 elif name == "unknown":
-                    self.setFormat(*span, self.UNKNOWN)
+                    self.setFormat(*match.span(), self.UNKNOWN)
                 else:
                     raise ValueError(name)
