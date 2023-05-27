@@ -195,7 +195,7 @@ class MainWindow(QMainWindow):
         self._a_saveas.triggered.connect(self.save_file_as)
         self._a_saveas.setShortcut(QKeySequence("Ctrl+Shift+s"))
 
-        self._a_clear = QAction("&Clear Log", self)
+        self._a_clear = QAction("&Clear Console", self)
         self._a_clear.triggered.connect(self.console.clear)
         self._a_clear.setShortcut(QKeySequence("Ctrl+Shift+c"))
 
@@ -281,7 +281,7 @@ class MainWindow(QMainWindow):
         self._a_parse = QAction("&Parse", self)
         self._a_parse.triggered.connect(self.show_parse_tree)
         self._a_parse.setShortcut(QKeySequence("Ctrl+`"))
-        self._a_parse.setToolTip("Show the parse tree in the log window")
+        self._a_parse.setToolTip("Show the parse tree in the console")
 
         self._a_runlatex = QAction("&Run", self)
         self._a_runlatex.triggered.connect(self.run_latex)
@@ -315,6 +315,11 @@ class MainWindow(QMainWindow):
         self._a_togglewrap.triggered.connect(self.toggle_wrap)
         self._a_togglewrap.setShortcut(QKeySequence("Alt+z"))
         self._a_togglewrap.setCheckable(True)
+
+        self._a_toggleopenpdf = QAction("Open &PDF When Done", self)
+        self._a_toggleopenpdf.triggered.connect(self.toggle_open_pdf)
+        self._a_toggleopenpdf.setShortcut(QKeySequence("Alt+p"))
+        self._a_toggleopenpdf.setCheckable(True)
 
         self._a_configdialog = QAction("&More...", self)
         self._a_configdialog.triggered.connect(self.open_config_dialog)
@@ -431,6 +436,7 @@ class MainWindow(QMainWindow):
         options_menu.addAction(self._a_smallerfont)
         options_menu.addSeparator()
         options_menu.addAction(self._a_togglewrap)
+        options_menu.addAction(self._a_toggleopenpdf)
         options_menu.addSeparator()
         options_menu.addAction(self._a_configdialog)
 
@@ -545,6 +551,7 @@ class MainWindow(QMainWindow):
 
         # menu items
         self._a_togglewrap.setChecked(self._config.editor_wrap_lines)
+        self._a_toggleopenpdf.setChecked(self._config.open_pdf_when_done)
 
         # syntax highlighting
         # TODO make configurable
@@ -832,6 +839,10 @@ class MainWindow(QMainWindow):
         self._config.console_wrap_lines = state
         self._update_ui_with_config()
 
+    def toggle_open_pdf(self, state: bool):
+        self._config.open_pdf_when_done = state
+        self._update_ui_with_config()
+
     def open_config_dialog(self):
         w = ConfigDialog(self)
         w.setWindowTitle("Options")
@@ -936,7 +947,7 @@ class ConfigDialog(QDialog):
 
         layout.addSpacing(space_after_group)
 
-        layout.addWidget(QLabel("Log Window Font"))
+        layout.addWidget(QLabel("Console Font"))
         self.console_font_selector = QFontComboBox(self)
         layout.addWidget(self.console_font_selector)
         self.console_font_size_selector = QSpinBox(self, minimum=8, suffix=" pt")
