@@ -81,10 +81,6 @@ class Settings:
         with open(filepath, encoding="utf-8") as f:
             return cls(**json.load(f))
 
-    def to_json(self, filepath: str, indent=4):
-        with open(filepath, "w", encoding="utf-8") as f:
-            json.dump(dataclasses.asdict(self), f, indent=indent)
-
 
 def render(*, template_path: str, cv: CV, settings: Settings):
     with open(template_path, encoding="utf-8") as template_file:

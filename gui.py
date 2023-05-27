@@ -11,7 +11,6 @@ from PyQt6.QtGui import (
     QFont,
     QCloseEvent,
     QFontMetrics,
-    QShortcut,
 )
 from PyQt6.QtWidgets import (
     QApplication,
@@ -36,6 +35,7 @@ from PyQt6.QtWidgets import (
     QLineEdit,
     QFileDialog,
     QMessageBox,
+    QSpacerItem,
 )
 
 import txtparse
@@ -45,6 +45,7 @@ from cveditor import CvEditor
 
 APP_TITLE = "Curriculum Victim"
 LAST_USED_SETTINGS = "settings/last_used.json"
+LAST_USED_CHAT_PARAMS = "chat_params/last_used.json"
 LAST_USED_CONFIG = "config/last_used.json"
 
 
@@ -94,19 +95,23 @@ class Config:
         with open(filepath, encoding="utf-8") as f:
             return cls(**json.load(f))
 
-    def to_json(self, filepath: str, indent=4):
-        with open(filepath, "w", encoding="utf-8") as f:
-            json.dump(dataclasses.asdict(self), f, indent=indent)
-
 
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
+        self._menubar = self.menuBar()
 
-        self._filepath = ""
+        # editor and console appearance
         self._config = self._get_config()
-        self._gpt_windows = []  # stand-alone prompt windows
-        self.menubar = self.menuBar()
+
+        # chat completion parameters
+        self._chat_params = self._get_chat_params()
+
+        # references to stand-alone GPT prompt windows
+        self._gpt_windows = []
+
+        # path to the last opened file
+        self._filepath = ""
 
         # Main widget
         central_widget = QSplitter(self)
@@ -143,7 +148,7 @@ class MainWindow(QMainWindow):
         settings_area.setFrameShape(QFrame.Shape.NoFrame)
         control_panel_layout.addWidget(settings_area)
 
-        self.settings_frame = SettingsFrame(self)
+        self.settings_frame = LatexSettingsFrame(self)
         settings_area.setWidget(self.settings_frame)
         settings_area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         settings_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
@@ -189,6 +194,10 @@ class MainWindow(QMainWindow):
         self._a_saveas = QAction("Save &As...", self)
         self._a_saveas.triggered.connect(self.save_file_as)
         self._a_saveas.setShortcut(QKeySequence("Ctrl+Shift+s"))
+
+        self._a_clear = QAction("&Clear Log", self)
+        self._a_clear.triggered.connect(self.console.clear)
+        self._a_clear.setShortcut(QKeySequence("Ctrl+Shift+c"))
 
         self._a_quit = QAction("&Quit", self)
         self._a_quit.triggered.connect(self.close)
@@ -276,7 +285,7 @@ class MainWindow(QMainWindow):
 
         self._a_runlatex = QAction("&Run", self)
         self._a_runlatex.triggered.connect(self.run_latex)
-        self._a_runlatex.setShortcut(QKeySequence("Ctrl+Shift+r"))
+        self._a_runlatex.setShortcut(QKeySequence("Ctrl+r"))
 
         self._a_importsettings = QAction("&Import Settings...", self)
         self._a_importsettings.triggered.connect(self.import_settings)
@@ -308,12 +317,17 @@ class MainWindow(QMainWindow):
         self._a_togglewrap.setCheckable(True)
 
         self._a_configdialog = QAction("&More...", self)
-        self._a_configdialog.triggered.connect(self.open_config_window)
+        self._a_configdialog.triggered.connect(self.open_config_dialog)
         self._a_configdialog.setShortcut(QKeySequence("Ctrl+,"))
 
         self._a_enterprompt = QAction("&Enter Prompt...", self)
         self._a_enterprompt.triggered.connect(self.open_prompt_window)
         self._a_enterprompt.setShortcut(QKeySequence("Ctrl+e"))
+
+        self._a_paramsdialog = QAction("&Parameters...", self)
+        self._a_paramsdialog.triggered.connect(self.open_params_dialog)
+        self._a_paramsdialog.setShortcut(QKeySequence("Ctrl+p"))
+        self._a_paramsdialog.setDisabled(True)  # TODO
 
         self._gpt_actions = self._create_gpt_actions()
 
@@ -338,16 +352,21 @@ class MainWindow(QMainWindow):
 
     def _get_config(self):
         try:
-            config = Config.from_json(LAST_USED_CONFIG)
-        except FileNotFoundError:
-            config = Config()
-        return config
+            return Config.from_json(LAST_USED_CONFIG)
+        except (FileNotFoundError, json.JSONDecodeError):
+            return Config()
+
+    def _get_chat_params(self):
+        try:
+            return chat.Params.from_json(LAST_USED_CHAT_PARAMS)
+        except (FileNotFoundError, json.JSONDecodeError):
+            return chat.Params()
 
     def _create_menus(self):
         # File menu
         file_menu = QMenu("&File", self)
         file_menu.setToolTipsVisible(True)
-        self.menubar.addMenu(file_menu)
+        self._menubar.addMenu(file_menu)
 
         file_menu.addAction(self._a_new)
         file_menu.addAction(self._a_newblank)
@@ -358,12 +377,13 @@ class MainWindow(QMainWindow):
         file_menu.addAction(self._a_save)
         file_menu.addAction(self._a_saveas)
         file_menu.addSeparator()
+        file_menu.addAction(self._a_clear)
         file_menu.addAction(self._a_quit)
 
         # Edit menu
         edit_menu = QMenu("&Edit", self)
         edit_menu.setToolTipsVisible(True)
-        self.menubar.addMenu(edit_menu)
+        self._menubar.addMenu(edit_menu)
 
         edit_menu.addAction(self._a_undo)
         edit_menu.addAction(self._a_redo)
@@ -388,12 +408,12 @@ class MainWindow(QMainWindow):
 
         # ChatGPT menu
         self._gpt_menu = self._create_gpt_menu()
-        self.menubar.addMenu(self._gpt_menu)
+        self._menubar.addMenu(self._gpt_menu)
 
         # LaTeX menu
         latex_menu = QMenu("La&TeX", self)
         latex_menu.setToolTipsVisible(True)
-        self.menubar.addMenu(latex_menu)
+        self._menubar.addMenu(latex_menu)
 
         latex_menu.addAction(self._a_parse)
         latex_menu.addAction(self._a_runlatex)
@@ -405,7 +425,7 @@ class MainWindow(QMainWindow):
         # Options menu
         options_menu = QMenu("&Options", self)
         options_menu.setToolTipsVisible(True)
-        self.menubar.addMenu(options_menu)
+        self._menubar.addMenu(options_menu)
 
         options_menu.addAction(self._a_largerfont)
         options_menu.addAction(self._a_smallerfont)
@@ -451,6 +471,7 @@ class MainWindow(QMainWindow):
             actions.append(action)
 
         actions.append(self._a_enterprompt)
+        actions.append(self._a_paramsdialog)
         return actions
 
     def _create_gpt_menu(self) -> QMenu:
@@ -478,12 +499,11 @@ class MainWindow(QMainWindow):
         thread.finished.connect(_on_success)
         thread.error.connect(_on_error)
 
-        gpt = chat.Chat(model="gpt-3.5-turbo")
         prompt_tail = self.editor.get_selected()
         prompt = f"{prompt_head}\n\n{prompt_tail}".strip()
         self._set_gpt_enabled(False)
-        self.console.clear()
-        thread.run(gpt=gpt, prompt=prompt, console=self.console)
+        # self.console.clear()
+        thread.run(prompt=prompt, params=self._chat_params, console=self.console)
 
     def _set_gpt_enabled(self, enabled: bool = True):
         self._gpt_menu.setEnabled(enabled)
@@ -561,10 +581,10 @@ class MainWindow(QMainWindow):
 
     def _load_initial_settings(self):
         try:
-            initial_settings = tex.Settings.from_json(LAST_USED_SETTINGS)
-        except FileNotFoundError:
-            initial_settings = tex.Settings()
-        self.settings_frame.load_settings(initial_settings)
+            settings = tex.Settings.from_json(LAST_USED_SETTINGS)
+        except (FileNotFoundError, json.JSONDecodeError):
+            settings = tex.Settings()
+        self.settings_frame.load_settings(settings)
 
     def closeEvent(self, event: QCloseEvent):
         # Ask user to handle unsaved change if any
@@ -578,16 +598,19 @@ class MainWindow(QMainWindow):
         ):
             event.ignore()
         else:
-            # Save current settings
+            # Save current GPT parameters
+            # json_dump(self._chat_params, filepath=LAST_USED_CHAT_PARAMS)
+            # Save current LaTeX settings
             settings = self.settings_frame.get_settings()
-            settings.to_json(LAST_USED_SETTINGS)
+            json_dump(settings, filepath=LAST_USED_SETTINGS)
             # Save current config; with update window geometry too
             window_rect = self.geometry()
             self._config.window_x = window_rect.x()
             self._config.window_y = window_rect.y()
             self._config.window_width = window_rect.width()
             self._config.window_height = window_rect.height()
-            self._config.to_json(LAST_USED_CONFIG)
+            json_dump(self._config, filepath=LAST_USED_CONFIG)
+            # Close GPT windows if any
             for w in self._gpt_windows:
                 w.close()
             event.accept()
@@ -606,7 +629,7 @@ class MainWindow(QMainWindow):
     def run_latex(self):
         self.run_button.setDisabled(True)
         self._a_runlatex.setDisabled(True)
-        self.console.clear()
+        # self.console.clear()
         try:
             # TODO hard-coded paths
             template_path = "templates/classic.tex"
@@ -649,7 +672,8 @@ class MainWindow(QMainWindow):
             show_error(parent=self, text=f"Sorry, something went wrong.\n\n{message}")
             return
 
-        self.console.append("Operation completed successfully.")
+        self.console.append("<b>Operation completed successfully.</b>")
+        self.console.append("")
         try:
             if self._config.open_pdf_when_done:
                 os.startfile("output.pdf")
@@ -684,14 +708,12 @@ class MainWindow(QMainWindow):
         self._filepath = ""
         self._update_filepath()
         self.setWindowModified(False)
-        self.console.clear()
 
     def new_blank_file(self):
         self.editor.setPlainText("")
         self._filepath = ""
         self._update_filepath()
         self.setWindowModified(False)
-        self.console.clear()
 
     def _open_file(self, filepath: str):
         try:
@@ -791,7 +813,7 @@ class MainWindow(QMainWindow):
         if not filepath:
             return
         settings = self.settings_frame.get_settings()
-        settings.to_json(filepath=filepath)
+        json_dump(settings, filepath=filepath)
 
     def restore_default(self):
         self.settings_frame.load_settings(tex.Settings())
@@ -810,12 +832,12 @@ class MainWindow(QMainWindow):
         self._config.console_wrap_lines = state
         self._update_ui_with_config()
 
-    def open_config_window(self):
+    def open_config_dialog(self):
         w = ConfigDialog(self)
         w.setWindowTitle("Options")
         w.load_config(self._config)
 
-        def _get_config():
+        def _update_config():
             try:
                 self._config = w.get_config()
                 self._update_ui_with_config()
@@ -824,7 +846,24 @@ class MainWindow(QMainWindow):
             finally:
                 w.close()
 
-        w.ok_button.clicked.connect(_get_config)
+        w.ok_button.clicked.connect(_update_config)
+        w.exec()
+
+    def open_params_dialog(self):
+        w = ParamsDialog()
+        w.setWindowTitle("Chat Completion Parameters")
+        w.load_params(self._chat_params)
+
+        def _update_params():
+            try:
+                self._chat_params = w.get_params()
+            except Exception as e:
+                self._handle_exc(e)
+            finally:
+                print(self._chat_params)
+                w.close()
+
+        w.ok_button.clicked.connect(_update_params)
         w.exec()
 
     def open_prompt_window(self):
@@ -913,13 +952,10 @@ class ConfigDialog(QDialog):
         layout.addWidget(button_frame)
         button_frame_layout = QHBoxLayout()
         button_frame.setLayout(button_frame_layout)
-
-        cancel_button = QPushButton("Cancel", self)
-        cancel_button.clicked.connect(self.close)
-        button_frame_layout.addWidget(cancel_button)
-
         self.ok_button = QPushButton("OK", self)
-        button_frame_layout.addWidget(self.ok_button)
+        button_frame_layout.addWidget(
+            self.ok_button, alignment=Qt.AlignmentFlag.AlignRight
+        )
 
     def get_config(self) -> Config:
         c = Config()
@@ -940,7 +976,158 @@ class ConfigDialog(QDialog):
         self.console_wrap_check.setChecked(config.console_wrap_lines)
 
 
-class SettingsFrame(QFrame):
+class ParamsDialog(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        layout = QVBoxLayout()
+        self.setLayout(layout)
+        spacer20 = QSpacerItem(0, 20)
+        spacer10 = QSpacerItem(0, 10)
+
+        params_frame = QFrame(self)
+        layout.addWidget(params_frame)
+        params_layout = QGridLayout()
+        params_layout.setHorizontalSpacing(15)
+        params_layout.setVerticalSpacing(5)
+        params_frame.setLayout(params_layout)
+
+        # model
+        row = 0
+        params_layout.addWidget(QLabel("Model"), row, 0)
+        self.model_selector = QComboBox(self)
+        self.model_selector.addItems(["gpt-3.5-turbo", "gpt-4", "text-davinci-003"])
+        params_layout.addWidget(self.model_selector, row, 1)
+
+        row += 1
+        params_layout.addItem(spacer20, row, 0)
+
+        # temperature
+        row += 1
+        params_layout.addWidget(QLabel("Temperature"), row, 0)
+        self.temperature_check = QCheckBox("Use Default", self)
+        params_layout.addWidget(self.temperature_check, row, 1)
+        self.temperature_selector = QDoubleSpinBox(self)
+        self.temperature_selector.setMinimum(0.0)
+        self.temperature_selector.setMaximum(2.0)
+        self.temperature_selector.setSingleStep(0.1)
+        params_layout.addWidget(self.temperature_selector, row + 1, 1)
+
+        row += 2
+        params_layout.addItem(spacer10, row, 0)
+
+        # top_p
+        row += 1
+        params_layout.addWidget(QLabel("Top P"), row, 0)
+        self.top_p_check = QCheckBox("Use Default", self)
+        params_layout.addWidget(self.top_p_check, row, 1)
+        self.top_p_selector = QDoubleSpinBox(self)
+        self.top_p_selector.setMinimum(0.0)
+        self.top_p_selector.setMaximum(1.0)
+        self.top_p_selector.setSingleStep(0.1)
+        params_layout.addWidget(self.top_p_selector, row + 1, 1)
+
+        row += 2
+        params_layout.addItem(spacer10, row, 0)
+
+        # presence penalty
+        row += 1
+        params_layout.addWidget(QLabel("Presence Penalty"), row, 0)
+        self.pres_penalty_check = QCheckBox("Use Default", self)
+        params_layout.addWidget(self.pres_penalty_check, row, 1)
+        self.pres_penalty_selector = QDoubleSpinBox(self)
+        self.pres_penalty_selector.setMinimum(-2.0)
+        self.pres_penalty_selector.setMaximum(2.0)
+        self.pres_penalty_selector.setSingleStep(0.1)
+        params_layout.addWidget(self.pres_penalty_selector, row + 1, 1)
+
+        row += 2
+        params_layout.addItem(spacer10, row, 0)
+
+        # frequency penalty
+        row += 1
+        params_layout.addWidget(QLabel("Frequency Penalty"), row, 0)
+        self.freq_penalty_check = QCheckBox("Use Default", self)
+        params_layout.addWidget(self.freq_penalty_check, row, 1)
+        self.freq_penalty_selector = QDoubleSpinBox(self)
+        self.freq_penalty_selector.setMinimum(-2.0)
+        self.freq_penalty_selector.setMaximum(2.0)
+        self.freq_penalty_selector.setSingleStep(0.1)
+        params_layout.addWidget(self.freq_penalty_selector, row + 1, 1)
+
+        # link check states to selectors
+        self.temperature_check.stateChanged.connect(self._on_temperature_check)
+        self.top_p_check.stateChanged.connect(self._on_top_p_check)
+        self.pres_penalty_check.stateChanged.connect(self._on_pres_penalty_check)
+        self.freq_penalty_check.stateChanged.connect(self._on_freq_penalty_check)
+
+        # ok button
+        button_frame = QFrame(self)
+        layout.addWidget(button_frame)
+        button_frame_layout = QHBoxLayout()
+        button_frame.setLayout(button_frame_layout)
+        self.ok_button = QPushButton("OK", self)
+        button_frame_layout.addWidget(
+            self.ok_button, alignment=Qt.AlignmentFlag.AlignRight
+        )
+
+    def _on_temperature_check(self):
+        use_default = self.temperature_check.isChecked()
+        self.temperature_selector.setDisabled(use_default)
+
+    def _on_top_p_check(self):
+        use_default = self.top_p_check.isChecked()
+        self.top_p_selector.setDisabled(use_default)
+
+    def _on_pres_penalty_check(self):
+        use_default = self.pres_penalty_check.isChecked()
+        self.pres_penalty_selector.setDisabled(use_default)
+
+    def _on_freq_penalty_check(self):
+        use_default = self.freq_penalty_check.isChecked()
+        self.freq_penalty_selector.setDisabled(use_default)
+
+    def get_params(self):
+        params = chat.Params()
+        params.model = self.model_selector.currentText()
+        if not self.temperature_check.isChecked():
+            params.temperature = self.temperature_selector.value()
+        if not self.top_p_check.isChecked():
+            params.top_p = self.top_p_selector.value()
+        if not self.pres_penalty_check.isChecked():
+            params.presence_penalty = self.pres_penalty_selector.value()
+        if not self.freq_penalty_check.isChecked():
+            params.frequency_penalty = self.freq_penalty_selector.value()
+        return params
+
+    def load_params(self, params: chat.Params):
+        self.model_selector.setCurrentText(params.model)
+
+        if params.temperature is None:
+            self.temperature_check.setChecked(True)
+        else:
+            self.temperature_check.setChecked(False)
+            self.temperature_selector.setValue(params.temperature)
+
+        if params.top_p is None:
+            self.top_p_check.setChecked(True)
+        else:
+            self.top_p_check.setChecked(False)
+            self.top_p_selector.setValue(params.top_p)
+
+        if params.presence_penalty is None:
+            self.pres_penalty_check.setChecked(True)
+        else:
+            self.pres_penalty_check.setChecked(False)
+            self.pres_penalty_selector.setValue(params.presence_penalty)
+
+        if params.frequency_penalty is None:
+            self.freq_penalty_check.setChecked(True)
+        else:
+            self.freq_penalty_check.setChecked(False)
+            self.freq_penalty_selector.setValue(params.frequency_penalty)
+
+
+class LatexSettingsFrame(QFrame):
     def __init__(self, parent=None):
         super().__init__(parent)
 
@@ -1405,16 +1592,25 @@ class GptThread(QThread):
     finished = pyqtSignal()
     error = pyqtSignal(Exception)
 
-    def run(self, gpt: chat.Chat, prompt: str, console: Console):
+    def run(self, prompt: str, params: chat.Params, console: Console):
+        kwargs = {"model": params.model}
+        if params.temperature is not None:
+            kwargs["temperature"] = params.temperature
+        if params.top_p is not None:
+            kwargs["top_p"] = params.top_p
+        if params.presence_penalty is not None:
+            kwargs["presence_penalty"] = params.presence_penalty
+        if params.frequency_penalty is not None:
+            kwargs["frequency_penalty"] = params.frequency_penalty
         try:
             console.append(f"<b>>>> Prompt</b>")
             console.append(prompt)
             console.append("<b>>>></b>")
+            console.append(f"<b>>>> {params.model}</b>")
+            console.append("")
             QApplication.processEvents()  # force update
 
-            console.append(f"<b>>>> {gpt.model}</b>")
-            console.append("")
-            for content, _ in gpt.get_chunks(prompt, assistant=False):
+            for content, _ in chat.Chat().get_chunks(prompt, assistant=False, **kwargs):
                 console.insertPlainText(content)
                 console.ensureCursorVisible()
                 QApplication.processEvents()  # force update
@@ -1461,6 +1657,11 @@ def silent_remove(filepath):
         os.remove(filepath)
     except OSError:
         pass
+
+
+def json_dump(data, filepath: str, indent=4):
+    with open(filepath, "w", encoding="utf-8") as f:
+        json.dump(dataclasses.asdict(data), f, indent=indent)
 
 
 def main():
