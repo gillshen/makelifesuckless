@@ -11,6 +11,8 @@ from PyQt6.QtGui import (
     QFont,
     QCloseEvent,
     QFontMetrics,
+    QTextCursor,
+    QTextCharFormat,
 )
 from PyQt6.QtWidgets import (
     QApplication,
@@ -671,7 +673,7 @@ class MainWindow(QMainWindow):
     def _handle_proc_output(self):
         proc = self.sender()
         output = proc.readAllStandardOutput().data().decode()
-        self.console.append(output)
+        self.console.xappend(output)
 
     def _handle_proc_finish(self, exit_code, exit_status):
         # re-enable UI
@@ -690,8 +692,8 @@ class MainWindow(QMainWindow):
             show_error(parent=self, text=f"Sorry, something went wrong.\n\n{message}")
             return
 
-        self.console.append("<b>Operation completed successfully.</b>")
-        self.console.append("")
+        self.console.xappend("<b>Operation completed successfully.</b>")
+        self.console.xappend("")
         try:
             if self._config.open_pdf_when_done:
                 os.startfile("output.pdf")
@@ -699,7 +701,7 @@ class MainWindow(QMainWindow):
             self._handle_exc(e)
 
     def _handle_exc(self, e: Exception):
-        self.console.append(traceback.format_exc())
+        self.console.xappend(traceback.format_exc())
         show_error(parent=self, text=f"{e.__class__.__name__}\n\n{e}")
 
     def _update_filepath(self):
@@ -894,6 +896,8 @@ class MainWindow(QMainWindow):
         w.resize(400, 320)
 
         def _run():
+            self.raise_()
+            w.raise_()
             prompt_head = w.get_prompt()
             self._exec_prompt(prompt_head)
 
@@ -1621,8 +1625,21 @@ class Separator(QFrame):
 class Console(QTextEdit):
     # handles process outputs and supports auto-scrolling
 
-    def append(self, text: str):
-        super().append(text)
+    def xappend(self, text: str):
+        # to work around the problem of append() inserting at the position
+        # of the cursor instead of the end of the document
+
+        # setCharFormat necessary to prevent the inserted content inheriting
+        # the style at the cursor position
+        char_format = QTextCharFormat()
+        char_format.setFontWeight(400)
+
+        cursor = self.textCursor()
+        cursor.movePosition(QTextCursor.MoveOperation.End)
+        cursor.setCharFormat(char_format)
+        self.setTextCursor(cursor)
+        self.ensureCursorVisible()
+        self.append(text)
         self.ensureCursorVisible()
 
 
@@ -1641,22 +1658,22 @@ class GptThread(QThread):
         if params.frequency_penalty is not None:
             kwargs["frequency_penalty"] = params.frequency_penalty
         try:
-            console.append(f"<b>>>> Prompt</b>")
-            console.append(prompt)
-            console.append("")
-            console.append(f"<b>>>> {params.model}</b>")
-            console.append("")
+            console.xappend(f"<b>>>> Prompt</b>")
+            console.xappend(prompt)
+            console.xappend("")
+            console.xappend(f"<b>>>> {params.model}</b>")
+            console.xappend("")
             QApplication.processEvents()  # force update
 
             for content in gpt.send(prompt, assistant=True, **kwargs):
                 console.insertPlainText(content)
                 console.ensureCursorVisible()
                 QApplication.processEvents()  # force update
-            console.append("")
+            console.xappend("")
 
             tokens_used = gpt.total_token_count(params.model)
-            console.append(f"<b>>>> {tokens_used}/{chat._MAX_TOKENS}</b>")
-            console.append("")
+            console.xappend(f"<b>>>> {tokens_used}/{chat._MAX_TOKENS}</b>")
+            console.xappend("")
             self.finished.emit()
 
         except Exception as e:
