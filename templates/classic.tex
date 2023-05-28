@@ -18,6 +18,7 @@
     right=<< settings.right_margin_in_inch >>in
 ]{geometry}
 
+\pagestyle{<< "plain" if settings.show_page_numbers else "empty" >>}
 \linespread{<< settings.line_spread >>}
 \raggedbottom
 
@@ -86,52 +87,52 @@
     \begingroup%
     \setkeys{edukeys}{loc=, date=, degree=, major=, minor=, gpa=, rank=, courses=, #2}%
     \def\gparank{%
-    	\ifnotempty{\edu@gpa}{%
-    		\edu@gpa%
+        \ifnotempty{\edu@gpa}{%
+            \edu@gpa%
             \hideifempty{\edu@rank}{; }\edu@rank%
-    	}{%
-    		\edu@rank%
-    	}%
+        }{%
+            \edu@rank%
+        }%
     }
-	\newif\ifgparankshown
-	\newif\ifcoursesshown
+    \newif\ifgparankshown
+    \newif\ifcoursesshown
     % first row: school ... ifnull(loc, date)
     \textbf{#1}%
     \hfill%
     \ifnotempty{\edu@loc}{\edu@loc}{\edu@date}\par
     % second row
     \ifnotempty{\edu@degree}{%
-    	% if degree is not empty: degree[; major][; minor]
-    	\edu@degree%
-    	\hideifempty{\edu@major}{; }\edu@major%
-    	\hideifempty{\edu@minor}{; }\edu@minor%
+        % if degree is not empty: degree[; major][; minor]
+        \edu@degree%
+        \hideifempty{\edu@major}{; }\edu@major%
+        \hideifempty{\edu@minor}{; }\edu@minor%
     }{%
-    	% if degree is empty
-    	\gparankshowntrue%
-    	\ifnotempty{\edu@major}{%
-    		% if major is not empty: major[; minor][; gpa][; rank]
-    		\edu@major%
-    		\hideifempty{\edu@minor}{; }\edu@minor%
-    		\hideifempty{\edu@gpa\edu@rank}{; }\gparank%
-    	}{%
-    		% if major is empty
-    		\ifnotempty{\edu@minor}{%
-    			% if minor is not empty: minor[; gpa][; rank]
-    			\edu@minor%
-    			\hideifempty{\edu@gpa\edu@rank}{; }\gparank%
-    		}{%
-    			% if minor is empty
-    			\ifnotempty{\edu@gpa\edu@rank}{%
-    				% if either gpa or rank is not empty
-    				\gparank%
-    			}{%
-    				% if both gpa and rank are empty
-    				\coursesshowntrue%
-    				\edu@courses%
-    			}%
-    		}%
-    	}%
-	}%
+        % if degree is empty
+        \gparankshowntrue%
+        \ifnotempty{\edu@major}{%
+            % if major is not empty: major[; minor][; gpa][; rank]
+            \edu@major%
+            \hideifempty{\edu@minor}{; }\edu@minor%
+            \hideifempty{\edu@gpa\edu@rank}{; }\gparank%
+        }{%
+            % if major is empty
+            \ifnotempty{\edu@minor}{%
+                % if minor is not empty: minor[; gpa][; rank]
+                \edu@minor%
+                \hideifempty{\edu@gpa\edu@rank}{; }\gparank%
+            }{%
+                % if minor is empty
+                \ifnotempty{\edu@gpa\edu@rank}{%
+                    % if either gpa or rank is not empty
+                    \gparank%
+                }{%
+                    % if both gpa and rank are empty
+                    \coursesshowntrue%
+                    \edu@courses%
+                }%
+            }%
+        }%
+    }%
     \hfill
     \ifnotempty{\edu@loc}{\edu@date}{}\par
     % show gpa and rank if not already
@@ -168,8 +169,8 @@
 <!- if settings.title_font !>
     \setmainfont{<< settings.title_font >>}[Numbers={<< var_proportional >>, << var_oldstyle >>}]%
 <!- endif !>
-	\<< settings.title_relative_size >>\bfseries%
-	<< cv.name|to_latex >>
+    \<< settings.title_relative_size >>\bfseries%
+    << cv.name|to_latex >>
 \end{center}
 \addvspace{\postentryskip}
 <!- endif !>

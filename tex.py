@@ -76,6 +76,9 @@ class Settings:
     color_links: bool = False
     url_color: str = "black"
 
+    # page numbers
+    show_page_numbers: bool = True
+
     @classmethod
     def from_json(cls, filepath: str) -> "Settings":
         with open(filepath, encoding="utf-8") as f:

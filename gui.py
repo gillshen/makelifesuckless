@@ -1337,6 +1337,14 @@ class LatexSettingsFrame(QFrame):
         layout.addWidget(self.url_color_selector)
         layout.addSpacing(space_after_group)
 
+        layout.addWidget(Separator(self))
+        layout.addSpacing(space_after_separator)
+
+        # page numbers
+        self.page_numbers_check = QCheckBox("Show Page Numbers", self)
+        layout.addWidget(self.page_numbers_check)
+        layout.addSpacing(space_after_group)
+
         # handle event
         self.color_links_check.stateChanged.connect(self._update_urlcolor_selector)
 
@@ -1399,6 +1407,8 @@ class LatexSettingsFrame(QFrame):
         s.color_links = self.color_links_check.isChecked()
         s.url_color = self.url_color_selector.get_color()
 
+        s.show_page_numbers = self.page_numbers_check.isChecked()
+
         return s
 
     def load_settings(self, s: tex.Settings):
@@ -1453,6 +1463,8 @@ class LatexSettingsFrame(QFrame):
         self.url_color_selector.set_from_color(s.url_color)
         self.color_links_check.setChecked(s.color_links)
         self.color_links_check.stateChanged.emit(self.color_links_check.isChecked())
+
+        self.page_numbers_check.setChecked(s.show_page_numbers)
 
 
 class LatexPaperSelector(QComboBox):
