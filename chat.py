@@ -9,7 +9,8 @@ try:
     with open("keys.json", encoding="utf-8") as f:
         cred = json.load(f)
     openai.api_key = cred["key"]
-    openai.api_base = cred["base"]
+    if "base" in cred:
+        openai.api_base = cred["base"]
 except FileNotFoundError:
     openai.api_key = openai.api_base = ""
 
