@@ -1,0 +1,7 @@
+{
+    "model": "gpt-3.5-turbo",
+    "temperature": null,
+    "top_p": null,
+    "presence_penalty": null,
+    "frequency_penalty": null
+}
