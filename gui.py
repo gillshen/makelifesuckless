@@ -74,7 +74,7 @@ class Config:
     cv_date_bold: bool = True
     cv_section_foreground: str = "#9400D3"  # dark orchid
     cv_section_bold: bool = True
-    cv_unknown_foreground = "#FFA500"  # orange
+    cv_unknown_foreground: str = "#FFA500"  # orange
     cv_unknown_bold: bool = False
 
     # console
