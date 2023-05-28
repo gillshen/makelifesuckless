@@ -106,6 +106,7 @@ class MainWindow(QMainWindow):
 
         # chat completion parameters
         self._chat_params = self._get_chat_params()
+        self._gpt = chat.Chat()
 
         # references to stand-alone GPT prompt windows
         self._gpt_windows = []
@@ -329,6 +330,10 @@ class MainWindow(QMainWindow):
         self._a_enterprompt.triggered.connect(self.open_prompt_window)
         self._a_enterprompt.setShortcut(QKeySequence("Ctrl+e"))
 
+        self._a_reset_chat = QAction("&Reset Context", self)
+        self._a_reset_chat.triggered.connect(self.reset_chat_context)
+        self._a_reset_chat.setShortcut(QKeySequence("Ctrl+Shift+r"))
+
         self._a_paramsdialog = QAction("&Parameters...", self)
         self._a_paramsdialog.triggered.connect(self.open_params_dialog)
         self._a_paramsdialog.setShortcut(QKeySequence("Ctrl+p"))
@@ -477,6 +482,7 @@ class MainWindow(QMainWindow):
             actions.append(action)
 
         actions.append(self._a_enterprompt)
+        actions.append(self._a_reset_chat)
         actions.append(self._a_paramsdialog)
         return actions
 
@@ -509,7 +515,12 @@ class MainWindow(QMainWindow):
         prompt = f"{prompt_head}\n\n{prompt_tail}".strip()
         self._set_gpt_enabled(False)
         # self.console.clear()
-        thread.run(prompt=prompt, params=self._chat_params, console=self.console)
+        thread.run(
+            gpt=self._gpt,
+            prompt=prompt,
+            params=self._chat_params,
+            console=self.console,
+        )
 
     def _set_gpt_enabled(self, enabled: bool = True):
         self._gpt_menu.setEnabled(enabled)
@@ -889,6 +900,10 @@ class MainWindow(QMainWindow):
         w.send.triggered.connect(_run)
         self._gpt_windows.append(w)
         w.show()
+
+    def reset_chat_context(self):
+        self._gpt.reset_messages()
+        show_info(parent=self, text="Chat context has been reset.")
 
 
 class GptWindow(QDialog):
@@ -1615,8 +1630,8 @@ class GptThread(QThread):
     finished = pyqtSignal()
     error = pyqtSignal(Exception)
 
-    def run(self, prompt: str, params: chat.Params, console: Console):
-        kwargs = {"model": params.model}
+    def run(self, gpt: chat.Chat, prompt: str, params: chat.Params, console: Console):
+        kwargs = {"model": params.model, "stream": True}
         if params.temperature is not None:
             kwargs["temperature"] = params.temperature
         if params.top_p is not None:
@@ -1628,16 +1643,20 @@ class GptThread(QThread):
         try:
             console.append(f"<b>>>> Prompt</b>")
             console.append(prompt)
-            console.append("<b>>>></b>")
+            console.append("")
             console.append(f"<b>>>> {params.model}</b>")
             console.append("")
             QApplication.processEvents()  # force update
 
-            for content, _ in chat.Chat().get_chunks(prompt, assistant=False, **kwargs):
+            for content in gpt.send(prompt, assistant=True, **kwargs):
                 console.insertPlainText(content)
                 console.ensureCursorVisible()
                 QApplication.processEvents()  # force update
-            console.append("<b>>>></b>")
+            console.append("")
+
+            tokens_used = gpt.total_token_count(params.model)
+            console.append(f"<b>>>> {tokens_used}/{chat._MAX_TOKENS}</b>")
+            console.append("")
             self.finished.emit()
 
         except Exception as e:

@@ -1,7 +1,9 @@
-import json
 import dataclasses
+import json
+import re
 
 import openai
+import tiktoken
 
 try:
     with open("keys.json", encoding="utf-8") as f:
@@ -10,6 +12,15 @@ try:
     openai.api_base = cred["base"]
 except FileNotFoundError:
     openai.api_key = openai.api_base = ""
+
+try:
+    tiktoken.get_encoding("cl100k_base")
+    tiktoken.get_encoding("p50k_base")
+    _TIKTOKEN_READY = True
+except Exception:
+    _TIKTOKEN_READY = False
+
+_MAX_TOKENS = 4096
 
 
 @dataclasses.dataclass
@@ -65,32 +76,73 @@ class Chat:
         self.messages = [{"role": "system", "content": self.system_message}]
 
     def send(self, prompt: str, *, assistant: bool = False, **kwargs):
-        # `assistant`
+        # `assistant`:
         # if true, GPT responses are kept as assistant messages and
         # sent with to future completion requests; default false
+        if not assistant:
+            self.reset_messages()
+
+        model = kwargs["model"]
+
+        # First, count the number of messages and total tokens in self.messages:
+        # if there are n messages with an average of t tokens per message
+        # and t * (n + 2) is greater than the limit, then it is likely that the
+        # next interaction will exceed the limit. As a precaution, remove the
+        # earliest interaction (the earliest 2 assistant messages).
+        while self.avg_token_count(model) * (self.message_count() + 2) > _MAX_TOKENS:
+            past_interactions = [m for m in self.messages if m["role"] == "assistant"]
+            self.messages.remove(past_interactions[0])
+            self.messages.remove(past_interactions[1])
+            print(f"removed message:\n{past_interactions[0]}")
+            print(f"removed message:\n{past_interactions[1]}")
+
         user_message = {"role": "user", "content": prompt}
         self.messages.append(user_message)
         kwargs["messages"] = self.messages
+        # kwargs["max_tokens"] = _MAX_TOKENS - self.total_token_count(model)
         try:
-            response = openai.ChatCompletion.create(**kwargs)
+            if kwargs.get("stream"):
+                response_chunks = []
+                for chunk in openai.ChatCompletion.create(**kwargs):
+                    content = chunk["choices"][0]["delta"]["content"]
+                    response_chunks.append(content)
+                    yield content
+                self.messages.append(
+                    {"role": "assistant", "content": "".join(response_chunks)}
+                )
+            else:
+                response = openai.ChatCompletion.create(**kwargs)
+                response_message = response["choices"][0]["message"]
+                self.messages.append(response_message)
+                return response_message
         except Exception:
             self.messages.pop()  # remove the unsuccessful message
             raise
-        if assistant:
-            response_message = response["choices"][0]["message"]
-            self.messages.append(response_message)
-        else:
-            self.reset_messages()
-        return response
 
-    def get_chunks(self, prompt: str, *, assistant: bool = False, **kwargs):
-        kwargs["stream"] = True
-        response = self.send(prompt, assistant=assistant, **kwargs)
-        for chunk in response:
-            choice_0 = chunk["choices"][0]
-            content = choice_0["delta"]["content"]
-            finish_reason = choice_0["finish_reason"]
-            yield content, finish_reason
+    def message_count(self):
+        return len(self.messages)
+
+    def total_token_count(self, model):
+        return sum([count_tokens(m["content"], model) for m in self.messages])
+
+    def avg_token_count(self, model):
+        if self.messages:
+            return self.total_token_count(model) / self.message_count()
+        return 0
+
+
+def count_tokens(s: str, model: str):
+    """Return the number of tokens in string `s`"""
+    if _TIKTOKEN_READY:
+        encoding = tiktoken.encoding_for_model(model)
+        encoded = encoding.encode(s)
+        return len(encoded)
+    else:
+        # if not able to download tiktoken encodings:
+        # use the estimate that 100 tokens correspond to 75 words
+        # https://help.openai.com/en/articles/4936856-what-are-tokens-and-how-to-count-them
+        word_list = [w for w in re.split(r"\W", s)]
+        return len(word_list) * 4 // 3
 
 
 def test():
@@ -106,8 +158,10 @@ def test():
             print(">>> chat has been reset")
             continue
         print(">>>")
-        for content, finish_reason in chat.get_chunks(prompt):
-            print(content, end=("\n" if finish_reason == "null" else ""))
+        for content in chat.send(
+            prompt, assistant=True, model="gpt-3.5-turbo", stream=True
+        ):
+            print(content, end="")
         print()
 
 
