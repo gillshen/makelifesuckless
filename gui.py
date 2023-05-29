@@ -1327,7 +1327,7 @@ class LatexSettingsFrame(QFrame):
         layout.addWidget(self.bullet_item_sep_selector)
         layout.addSpacing(space_within_group)
 
-        layout.addWidget(QLabel("Handle ending periods"))
+        layout.addWidget(QLabel("Handle Ending Periods"))
         self.period_policy_selector = PeriodPolicySelector(self)
         layout.addWidget(self.period_policy_selector)
         layout.addSpacing(space_after_group)
