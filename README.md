@@ -14,6 +14,7 @@ LaTeX-based cv typesetting tool
 
 - 经常用固定模板制作英文简历、无特殊排版要求、也不享受排版过程的人士
 - 赞同“写作者应当专注于内容，排版这种事不如交给程序”这一思想的人士
+- 觉得在自己的文档和网页版ChatGPT之间来回复制粘贴很麻烦的人士
 
 ## New in v0.2
 
@@ -204,7 +205,7 @@ role: zzz
 
 快捷键`Ctrl+E`（或工具栏`ChatGPT` -> `Enter Prompt...`）可以打开prompt输入窗。输入prompt后发送，正常的话几秒内console会显示ChatGPT的回复。
 
-![4c95883168e7fef62076b0b970e6917](https://github.com/gillshen/makelifesuckless/assets/100059605/2a9ef31d-9bca-4133-a425-11ddcb009ac5)
+![1685333679167](https://github.com/gillshen/makelifesuckless/assets/100059605/53107b3d-cabf-4c6b-90b6-aa5a626a7f62)
 
 如果编辑器里有文字被选中，选中的文字自动附在用户输入的prompt后面发给ChatGPT, 如图（输入窗中是用户输入的prompt, console显示的是实际发给ChatGPT的prompt）：
 
