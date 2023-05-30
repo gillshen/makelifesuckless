@@ -94,13 +94,10 @@ class Chat:
             past_interactions = [m for m in self.messages if m["role"] == "assistant"]
             self.messages.remove(past_interactions[0])
             self.messages.remove(past_interactions[1])
-            print(f"removed message:\n{past_interactions[0]}")
-            print(f"removed message:\n{past_interactions[1]}")
 
         user_message = {"role": "user", "content": prompt}
         self.messages.append(user_message)
         kwargs["messages"] = self.messages
-        # kwargs["max_tokens"] = _MAX_TOKENS - self.total_token_count(model)
         try:
             if kwargs.get("stream"):
                 response_chunks = []

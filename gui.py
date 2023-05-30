@@ -4,7 +4,7 @@ import traceback
 import dataclasses
 import json
 
-from PyQt6.QtCore import Qt, QProcess, QThread, pyqtSignal
+from PyQt6.QtCore import Qt, QProcess, QObject, QThread, pyqtSignal
 from PyQt6.QtGui import (
     QAction,
     QKeySequence,
@@ -109,6 +109,7 @@ class MainWindow(QMainWindow):
         # chat completion parameters
         self._chat_params = self._get_chat_params()
         self._gpt = chat.Chat()
+        self._threads = []
 
         # references to stand-alone GPT prompt windows
         self._gpt_windows = []
@@ -499,30 +500,62 @@ class MainWindow(QMainWindow):
             menu.setDisabled(True)
         return menu
 
-    def _exec_prompt(self, prompt_head: str):
-        thread = GptThread(self)
-
-        def _on_success():
-            self._gpt_menu.setEnabled(True)
-            self._set_gpt_enabled(True)
-
-        def _on_error(e: Exception):
-            self._handle_exc(e)
-            self._set_gpt_enabled(True)
-
-        thread.finished.connect(_on_success)
-        thread.error.connect(_on_error)
-
+    def _exec_prompt(self, prompt_head: str, parent=None):
         prompt_tail = self.editor.get_selected()
         prompt = f"{prompt_head}\n\n{prompt_tail}".strip()
-        self._set_gpt_enabled(False)
-        # self.console.clear()
-        thread.run(
-            gpt=self._gpt,
-            prompt=prompt,
-            params=self._chat_params,
-            console=self.console,
+
+        if not prompt:
+            show_error(parent=parent or self, text="The prompt must not be empty.")
+            return
+
+        thread = QThread()
+        # Must keep a reference to the thread and not delete it
+        # prematurely, but it should be deleted eventually.
+        # The most simple and robust solution seems to be holding threads
+        # in a list and and delete the old one when a new one is created
+        try:
+            self._threads.pop()  # delete the old one if exists
+        except IndexError:
+            pass
+        self._threads.append(thread)
+
+        self._worker = ChatWorker(
+            gpt=self._gpt, prompt=prompt, params=self._chat_params
         )
+        self._worker.moveToThread(thread)
+
+        thread.started.connect(self._worker.run)
+        self._worker.progress.connect(self._stream_completion)
+        self._worker.finished.connect(thread.quit)
+        self._worker.finished.connect(self._worker.deleteLater)
+
+        def _on_completion_success():
+            self.console.xappend("")
+            tokens_used = self._gpt.total_token_count(self._chat_params.model)
+            self.console.xappend(f"<b>>>> {tokens_used}/{chat._MAX_TOKENS}</b>")
+            self.console.xappend("")
+            self._set_gpt_enabled(True)
+            thread.deleteLater()
+
+        thread.finished.connect(_on_completion_success)
+
+        def _on_completion_error(e: Exception):
+            self._handle_exc(e, parent=parent)
+            self._set_gpt_enabled(True)
+
+        self._worker.error.connect(_on_completion_error)
+
+        self._set_gpt_enabled(False)
+        self.console.xappend(f"<b>>>> Prompt</b>")
+        self.console.xappend(prompt)
+        self.console.xappend("")
+        self.console.xappend(f"<b>>>> {self._chat_params.model}</b>")
+        self.console.xappend("")
+        thread.start()
+
+    def _stream_completion(self, content: str):
+        self.console.insertPlainText(content)
+        self.console.ensureCursorVisible()
 
     def _set_gpt_enabled(self, enabled: bool = True):
         self._gpt_menu.setEnabled(enabled)
@@ -700,9 +733,9 @@ class MainWindow(QMainWindow):
         except Exception as e:
             self._handle_exc(e)
 
-    def _handle_exc(self, e: Exception):
+    def _handle_exc(self, e: Exception, parent=None):
         self.console.xappend(traceback.format_exc())
-        show_error(parent=self, text=f"{e.__class__.__name__}\n\n{e}")
+        show_error(parent=parent or self, text=f"{e.__class__.__name__}\n\n{e}")
 
     def _update_filepath(self):
         if self._filepath:
@@ -884,7 +917,6 @@ class MainWindow(QMainWindow):
             except Exception as e:
                 self._handle_exc(e)
             finally:
-                print(self._chat_params)
                 w.close()
 
         w.ok_button.clicked.connect(_update_params)
@@ -899,7 +931,7 @@ class MainWindow(QMainWindow):
             self.raise_()
             w.raise_()
             prompt_head = w.get_prompt()
-            self._exec_prompt(prompt_head)
+            self._exec_prompt(prompt_head, parent=w)
 
         w.send.triggered.connect(_run)
         self._gpt_windows.append(w)
@@ -1643,41 +1675,40 @@ class Console(QTextEdit):
         self.ensureCursorVisible()
 
 
-class GptThread(QThread):
+class ChatWorker(QObject):
+    progress = pyqtSignal(str)
     finished = pyqtSignal()
     error = pyqtSignal(Exception)
 
-    def run(self, gpt: chat.Chat, prompt: str, params: chat.Params, console: Console):
-        kwargs = {"model": params.model, "stream": True}
-        if params.temperature is not None:
-            kwargs["temperature"] = params.temperature
-        if params.top_p is not None:
-            kwargs["top_p"] = params.top_p
-        if params.presence_penalty is not None:
-            kwargs["presence_penalty"] = params.presence_penalty
-        if params.frequency_penalty is not None:
-            kwargs["frequency_penalty"] = params.frequency_penalty
+    def __init__(
+        self,
+        gpt: chat.Chat,
+        prompt: str,
+        params: chat.Params,
+        parent=None,
+    ):
+        super().__init__(parent)
+        self.gpt = gpt
+        self.prompt = prompt
+        self.params = params
+
+    def run(self):
+        kwargs = {"model": self.params.model, "stream": True}
+        if self.params.temperature is not None:
+            kwargs["temperature"] = self.params.temperature
+        if self.params.top_p is not None:
+            kwargs["top_p"] = self.params.top_p
+        if self.params.presence_penalty is not None:
+            kwargs["presence_penalty"] = self.params.presence_penalty
+        if self.params.frequency_penalty is not None:
+            kwargs["frequency_penalty"] = self.params.frequency_penalty
         try:
-            console.xappend(f"<b>>>> Prompt</b>")
-            console.xappend(prompt)
-            console.xappend("")
-            console.xappend(f"<b>>>> {params.model}</b>")
-            console.xappend("")
-            QApplication.processEvents()  # force update
-
-            for content in gpt.send(prompt, assistant=True, **kwargs):
-                console.insertPlainText(content)
-                console.ensureCursorVisible()
-                QApplication.processEvents()  # force update
-            console.xappend("")
-
-            tokens_used = gpt.total_token_count(params.model)
-            console.xappend(f"<b>>>> {tokens_used}/{chat._MAX_TOKENS}</b>")
-            console.xappend("")
-            self.finished.emit()
-
+            for content in self.gpt.send(self.prompt, assistant=True, **kwargs):
+                self.progress.emit(content)
         except Exception as e:
             self.error.emit(e)
+        else:
+            self.finished.emit()
 
 
 def _ask_yesno(
