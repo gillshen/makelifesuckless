@@ -3,6 +3,7 @@ import os
 import traceback
 import dataclasses
 import json
+import datetime
 
 from PyQt6.QtCore import Qt, QProcess, QObject, QThread, pyqtSignal
 from PyQt6.QtGui import (
@@ -684,9 +685,11 @@ class MainWindow(QMainWindow):
         self._a_runlatex.setDisabled(True)
         # self.console.clear()
         try:
-            # TODO hard-coded paths
             template_path = "templates/classic.tex"
-            tex_path = "output.tex"
+            tex_path = "output/output.tex"
+
+            if not os.path.isdir("output"):
+                os.mkdir("output")
 
             cv, _ = txtparse.parse(self.editor.toPlainText())
             settings = self.settings_frame.get_settings()
@@ -694,21 +697,22 @@ class MainWindow(QMainWindow):
             with open(tex_path, "w", encoding="utf-8") as tex_file:
                 tex_file.write(rendered)
 
-            proc = QProcess(self)
-            proc.readyReadStandardOutput.connect(self._handle_proc_output)
-            proc.finished.connect(self._handle_proc_finish)
-            proc.setProcessChannelMode(QProcess.ProcessChannelMode.SeparateChannels)
-            proc.start("lualatex", ["-interaction=nonstopmode", tex_path])
+            process = QProcess(self)
+            process.readyReadStandardOutput.connect(self._handle_process_output)
+            process.finished.connect(self._handle_process_finish)
+            process.setProcessChannelMode(QProcess.ProcessChannelMode.SeparateChannels)
+            process.start("lualatex", ["-interaction=nonstopmode", tex_path])
 
         except Exception as e:
             self._handle_exc(e)
 
-    def _handle_proc_output(self):
-        proc = self.sender()
-        output = proc.readAllStandardOutput().data().decode()
-        self.console.xappend(output)
+    def _handle_process_output(self):
+        process = self.sender()
+        output = process.readAllStandardOutput().data().decode()
+        self.console.insertPlainText(output)
+        self.console.ensureCursorVisible()
 
-    def _handle_proc_finish(self, exit_code, exit_status):
+    def _handle_process_finish(self, exit_code, exit_status):
         # re-enable UI
         self.run_button.setDisabled(False)
         self._a_runlatex.setDisabled(False)
@@ -727,9 +731,20 @@ class MainWindow(QMainWindow):
 
         self.console.xappend("<b>Operation completed successfully.</b>")
         self.console.xappend("")
+
+        now = datetime.datetime.now()
+        timestamp = now.strftime("%y-%m-%d_%H%M%S")
+        basename = f"output_{timestamp}.pdf"
+        # TODO may allow user to specify default output dir
+        dest_path = os.path.join("output", basename)
         try:
+            if not os.path.isdir("output"):
+                os.mkdir("output")
+            if os.path.isfile(dest_path):
+                os.remove(dest_path)
+            os.rename("output.pdf", dest_path)
             if self._config.open_pdf_when_done:
-                os.startfile("output.pdf")
+                os.startfile(dest_path)
         except Exception as e:
             self._handle_exc(e)
 
