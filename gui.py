@@ -47,9 +47,15 @@ import chat
 from cveditor import CvEditor
 
 APP_TITLE = "Curriculum Victim"
-LAST_USED_SETTINGS = "settings/last_used.json"
-LAST_USED_CHAT_PARAMS = "chat_params/last_used.json"
-LAST_USED_CONFIG = "config/last_used.json"
+
+SETTINGS_DIR = "settings"
+LAST_USED_SETTINGS = f"{SETTINGS_DIR}/last_used.json"
+
+CHAT_PARAMS_DIR = "chat_params"
+LAST_USED_CHAT_PARAMS = f"{CHAT_PARAMS_DIR}/last_used.json"
+
+CONFIG_DIR = "config"
+LAST_USED_CONFIG = f"{CONFIG_DIR}/last_used.json"
 
 
 @dataclasses.dataclass
@@ -656,6 +662,8 @@ class MainWindow(QMainWindow):
             # json_dump(self._chat_params, filepath=LAST_USED_CHAT_PARAMS)
             # Save current LaTeX settings
             settings = self.settings_frame.get_settings()
+            if not os.path.isdir(SETTINGS_DIR):
+                os.mkdir(SETTINGS_DIR)
             json_dump(settings, filepath=LAST_USED_SETTINGS)
             # Save current config; with update window geometry too
             window_rect = self.geometry()
@@ -663,6 +671,8 @@ class MainWindow(QMainWindow):
             self._config.window_y = window_rect.y()
             self._config.window_width = window_rect.width()
             self._config.window_height = window_rect.height()
+            if not os.path.isdir(CONFIG_DIR):
+                os.mkdir(CONFIG_DIR)
             json_dump(self._config, filepath=LAST_USED_CONFIG)
             # Close GPT windows if any
             for w in self._gpt_windows:
