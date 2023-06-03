@@ -1,6 +1,7 @@
 import dataclasses
 import json
 import re
+import typing
 
 import openai
 import tiktoken
@@ -71,29 +72,31 @@ class Chat:
     def __init__(self, system_message="You are a helpful assistant."):
         self.system_message = system_message
         self.messages = []
+        self.reserve_level = 75
         self.reset_messages()
 
     def reset_messages(self):
         self.messages = [{"role": "system", "content": self.system_message}]
 
-    def send(self, prompt: str, *, assistant: bool = False, **kwargs):
-        # `assistant`:
+    def send(self, prompt: str, *, keep_context: bool = False, **kwargs):
+        # `keep_context`:
         # if true, GPT responses are kept as assistant messages and
         # sent with to future completion requests; default false
-        if not assistant:
+        if not keep_context:
             self.reset_messages()
 
         model = kwargs["model"]
 
-        # First, count the number of messages and total tokens in self.messages:
-        # if there are n messages with an average of t tokens per message
-        # and t * (n + 2) is greater than the limit, then it is likely that the
-        # next interaction will exceed the limit. As a precaution, remove the
-        # earliest interaction (the earliest 2 assistant messages).
-        while self.avg_token_count(model) * (self.message_count() + 2) > _MAX_TOKENS:
-            past_interactions = [m for m in self.messages if m["role"] == "assistant"]
-            self.messages.remove(past_interactions[0])
-            self.messages.remove(past_interactions[1])
+        # If the number of tokens in the system and assistant messages plus
+        # the next interction (as calculated by `context_pair_length()`) will
+        # exceed the token limit, remove the earliest 2 assistant messages.
+        while (
+            self.token_count(model)
+            + self.context_pair_length(model, q=self.reserve_level)
+            > _MAX_TOKENS
+        ):
+            self.messages.remove(self.context[0])
+            self.messages.remove(self.context[0])
 
         user_message = {"role": "user", "content": prompt}
         self.messages.append(user_message)
@@ -105,32 +108,41 @@ class Chat:
                     content = chunk["choices"][0]["delta"]["content"]
                     response_chunks.append(content)
                     yield content
-                self.messages.append(
-                    {"role": "assistant", "content": "".join(response_chunks)}
-                )
+                completion = "".join(response_chunks)
             else:
                 response = openai.ChatCompletion.create(**kwargs)
-                response_message = response["choices"][0]["message"]
-                self.messages.append(response_message)
-                return response_message
+                completion = response["choices"][0]["message"]["content"]
+                yield completion
         except Exception:
-            self.messages.pop()  # remove the unsuccessful message
+            self.messages.pop()  # remove the unsuccessful user message
             raise
+        else:
+            self.messages.pop()  # remove the successful user message
+            self.add_context(prompt, completion)
 
-    def message_count(self):
-        return len(self.messages)
+    def add_context(self, *contents):
+        for content in contents:
+            self.messages.append({"role": "assistant", "content": content})
 
-    def total_token_count(self, model):
+    def token_count(self, model: str):
         return sum([count_tokens(m["content"], model) for m in self.messages])
 
-    def avg_token_count(self, model):
-        if self.messages:
-            return self.total_token_count(model) / self.message_count()
-        return 0
+    @property
+    def context(self) -> list:
+        return [m for m in self.messages if m["role"] == "assistant"]
+
+    def context_pair_length(self, model: str, q: int = 50):
+        """Return the q-th percentile of the lengths of past prompt-completion pairs."""
+        context_lengths = [count_tokens(c["content"], model) for c in self.context]
+        context_pair_lengths = (
+            context_lengths[i] + context_lengths[i + 1]
+            for i in range(0, len(context_lengths), 2)
+        )
+        return percentile(context_pair_lengths, q)
 
 
 def count_tokens(s: str, model: str):
-    """Return the number of tokens in string `s`"""
+    """Return the number of tokens in string `s`."""
     if _TIKTOKEN_READY:
         encoding = tiktoken.encoding_for_model(model)
         encoded = encoding.encode(s)
@@ -143,7 +155,15 @@ def count_tokens(s: str, model: str):
         return len(word_list) * 4 // 3
 
 
-def test():
+def percentile(data: typing.Iterable, q: int):
+    sorted_data = sorted(data)
+    if not sorted_data:
+        return 0
+    k = int((q / 100) * (len(sorted_data) - 1))
+    return sorted_data[k]
+
+
+def _test():
     chat = Chat()
     while True:
         try:
@@ -157,11 +177,14 @@ def test():
             continue
         print(">>>")
         for content in chat.send(
-            prompt, assistant=True, model="gpt-3.5-turbo", stream=True
+            prompt,
+            keep_context=True,
+            model="gpt-3.5-turbo",
+            stream=True,
         ):
             print(content, end="")
         print()
 
 
 if __name__ == "__main__":
-    test()
+    _test()

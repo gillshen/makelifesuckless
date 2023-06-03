@@ -182,9 +182,7 @@ class MainWindow(QMainWindow):
         # create actions
         # File and app actions
         self._a_new = self._create_action("&New", "Ctrl+n")
-        self._a_new.triggered.connect(
-            self.new_file,
-        )
+        self._a_new.triggered.connect(self.new_file)
         self._a_newblank = self._create_action("New &Blank", "Ctrl+Shift+n")
         self._a_newblank.triggered.connect(self.new_blank_file)
         self._a_open = self._create_action("&Open...", "Ctrl+o")
@@ -227,11 +225,8 @@ class MainWindow(QMainWindow):
             action.setShortcutContext(Qt.ShortcutContext.WidgetShortcut)
 
         # TODO
-        # self._a_goto = QAction("&Go to Line...", self)
-        # self._a_goto.triggered.connect(lambda: print("editor.goto_line"))
-        # self._a_goto.setShortcut(QKeySequence("Ctrl+g"))
+        # self._a_goto = self._create_action("&Go to Line...", "Ctrl+g")
         # self._a_goto.setDisabled(True)
-
         # TODO
         self._a_find = self._create_action("&Find...", "Ctrl+f")
         self._a_find.setDisabled(True)
@@ -266,9 +261,9 @@ class MainWindow(QMainWindow):
         self._a_restoredefault.setToolTip("Restore default LaTeX settings")
 
         # Editor options
-        self._a_largerfont = self._create_action("Zoom &In", "Ctrl+=")
+        self._a_largerfont = self._create_action("&Larger Font", "Ctrl+=")
         self._a_largerfont.triggered.connect(self.increment_editor_font_size)
-        self._a_smallerfont = self._create_action("Zoom &Out", "Ctrl+-")
+        self._a_smallerfont = self._create_action("&Smaller Font", "Ctrl+-")
         self._a_smallerfont.triggered.connect(self.decrement_editor_font_size)
         self._a_togglewrap = self._create_action("&Wrap Lines", "Alt+z")
         self._a_togglewrap.triggered.connect(self.toggle_wrap)
@@ -482,7 +477,7 @@ class MainWindow(QMainWindow):
 
         def _on_completion_success():
             self.console.xappend("")
-            tokens_used = self._gpt.total_token_count(self._chat_params.model)
+            tokens_used = self._gpt.token_count(self._chat_params.model)
             self.console.xappend(f"<b>>>> {tokens_used}/{chat._MAX_TOKENS}</b>")
             self.console.xappend("")
             self._set_gpt_enabled(True)
@@ -1672,7 +1667,7 @@ class ChatWorker(QObject):
         if self.params.frequency_penalty is not None:
             kwargs["frequency_penalty"] = self.params.frequency_penalty
         try:
-            for content in self.gpt.send(self.prompt, assistant=True, **kwargs):
+            for content in self.gpt.send(self.prompt, keep_context=True, **kwargs):
                 self.progress.emit(content)
         except Exception as e:
             self.error.emit(e)
