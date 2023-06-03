@@ -1,10 +1,16 @@
 import re
 
-from PyQt6.QtWidgets import QPlainTextEdit
-from PyQt6.QtGui import QSyntaxHighlighter, QTextCharFormat, QColor
+from PyQt6.QtCore import Qt
+from PyQt6.QtWidgets import QPlainTextEdit, QApplication
+from PyQt6.QtGui import (
+    QAction,
+    QSyntaxHighlighter,
+    QTextCharFormat,
+    QColor,
+)
 
 
-KEY_WORDS = sorted(
+KEYWORDS = sorted(
     [
         "name",
         "email",
@@ -37,7 +43,7 @@ KEY_WORDS = sorted(
     reverse=True,
 )
 
-_DATE_KWS = [kw for kw in KEY_WORDS if kw.endswith("date")]
+_DATE_KEYWORDS = [kw for kw in KEYWORDS if kw.endswith("date")]
 
 
 class CvEditor(QPlainTextEdit):
@@ -45,6 +51,54 @@ class CvEditor(QPlainTextEdit):
         super().__init__(parent)
         self.highlighter = CvSyntaxHighlighter(self)
         self.highlighter.setDocument(self.document())
+
+        self.undo_action = self._create_actions("&Undo", "Ctrl+z")
+        self.undo_action.triggered.connect(self.undo)
+        self.redo_action = self._create_actions("&Redo", "Ctrl+y")
+        self.redo_action.triggered.connect(self.redo)
+        self.cut_action = self._create_actions("Cu&t", "Ctrl+x")
+        self.cut_action.triggered.connect(self.cut)
+        self.copy_action = self._create_actions("&Copy", "Ctrl+c")
+        self.copy_action.triggered.connect(self.copy)
+        self.paste_action = self._create_actions("&Paste", "Ctrl+v")
+        self.paste_action.triggered.connect(self.paste)
+        self.selectall_action = self._create_actions("Select &All", "Ctrl+a")
+        self.selectall_action.triggered.connect(self.selectAll)
+
+        # TODO
+        self.find_action = self._create_actions("&Find", "Ctrl+f")
+        self.find_action.setDisabled(True)
+        self.replace_action = self._create_actions("&Replace", "Ctrl+h")
+        self.replace_action.setDisabled(True)
+
+        # Connect to slots
+        self.undoAvailable.connect(self.undo_action.setEnabled)
+        self.redoAvailable.connect(self.redo_action.setEnabled)
+        self.selectionChanged.connect(self._on_selection_change)
+        self._clipboard = QApplication.clipboard()
+        self._clipboard.changed.connect(self._on_clipboard_change)
+
+        # Initialize
+        self.undo_action.setDisabled(True)
+        self.redo_action.setDisabled(True)
+        self.cut_action.setDisabled(True)
+        self.copy_action.setDisabled(True)
+        self._on_clipboard_change()
+
+    def _create_actions(self, text, shortcut) -> QAction:
+        action = QAction(text, self)
+        action.setShortcut(shortcut)
+        action.setShortcutContext(Qt.ShortcutContext.WidgetShortcut)
+        return action
+
+    def _on_selection_change(self):
+        state = bool(self.get_selected())
+        self.cut_action.setEnabled(state)
+        self.copy_action.setEnabled(state)
+
+    def _on_clipboard_change(self):
+        state = bool(self._clipboard.text())
+        self.paste_action.setEnabled(state)
 
     def insert(self, text: str):
         self.insertPlainText(text)
@@ -57,10 +111,16 @@ class CvEditor(QPlainTextEdit):
 class CvSyntaxHighlighter(QSyntaxHighlighter):
     _PATTERNS = {
         # in order of increasing priority
+        # - line of unknown syntax
         r"^(.+)$": "unknown",
-        rf"^\s*((?:{'|'.join(KEY_WORDS)})\s*[:：])(.*)$": "keyword-text",
-        rf"^\s*(?:{'|'.join(_DATE_KWS)})\s*[:：]\s*(\d{{4}}(?:([-./])([01]?[0-9])(?:\2([0-3]?[0-9]))?)?)\s*$": "date",
+        # - keyword followed by text
+        rf"^\s*((?:{'|'.join(KEYWORDS)})\s*[:：])(.*)$": "keyword-text",
+        # - date keyword followed by date
+        rf"^\s*(?:{'|'.join(_DATE_KEYWORDS)})\s*[:：]"
+        rf"\s*(\d{{4}}(?:([-./])([01]?[0-9])(?:\2([0-3]?[0-9]))?)?)\s*$": "date",
+        # - bullet point followed by text
         r"^\s*([-•])\s*(.*)$": "bullet-text",
+        # - section symbol `#` followed by heading text
         r"^\s*#\s*(.+)$": "section-text",
     }
 

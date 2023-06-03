@@ -199,40 +199,7 @@ class MainWindow(QMainWindow):
         self._a_quit = self._create_action("&Quit", "Ctrl+q")
         self._a_quit.triggered.connect(self.close)
 
-        # Edit actions
-        self._a_undo = self._create_action("&Undo", "Ctrl+z")
-        self._a_undo.triggered.connect(self.editor.undo)
-        self._a_redo = self._create_action("&Redo", "Ctrl+y")
-        self._a_redo.triggered.connect(self.editor.redo)
-        self._a_cut = self._create_action("Cu&t", "Ctrl+x")
-        self._a_cut.triggered.connect(self.editor.cut)
-        self._a_copy = self._create_action("&Copy", "Ctrl+c")
-        self._a_copy.triggered.connect(self.editor.copy)
-        self._a_paste = self._create_action("&Paste", "Ctrl+v")
-        self._a_paste.triggered.connect(self.editor.paste)
-        self._a_selectall = self._create_action("Select &All", "Ctrl+a")
-        self._a_selectall.triggered.connect(self.editor.selectAll)
-
-        # avoid breaking counterpart bindings in the console
-        for action in [
-            self._a_undo,
-            self._a_redo,
-            self._a_cut,
-            self._a_copy,
-            self._a_paste,
-            self._a_selectall,
-        ]:
-            action.setShortcutContext(Qt.ShortcutContext.WidgetShortcut)
-
-        # TODO
-        # self._a_goto = self._create_action("&Go to Line...", "Ctrl+g")
-        # self._a_goto.setDisabled(True)
-        # TODO
-        self._a_find = self._create_action("&Find...", "Ctrl+f")
-        self._a_find.setDisabled(True)
-        self._a_replace = self._create_action("&Replace...", "Ctrl+h")
-        self._a_replace.setDisabled(True)
-
+        # Edit actions in addition to those provided by the editor
         self._a_activity = self._create_action("&Activity", "Ctrl+Alt+a")
         self._a_activity.triggered.connect(self.insert_activity)
         self._a_award = self._create_action("Awar&d", "Ctrl+Alt+d")
@@ -344,17 +311,17 @@ class MainWindow(QMainWindow):
         edit_menu.setToolTipsVisible(True)
         self._menubar.addMenu(edit_menu)
 
-        edit_menu.addAction(self._a_undo)
-        edit_menu.addAction(self._a_redo)
+        edit_menu.addAction(self.editor.undo_action)
+        edit_menu.addAction(self.editor.redo_action)
         edit_menu.addSeparator()
-        edit_menu.addAction(self._a_cut)
-        edit_menu.addAction(self._a_copy)
-        edit_menu.addAction(self._a_paste)
+        edit_menu.addAction(self.editor.cut_action)
+        edit_menu.addAction(self.editor.copy_action)
+        edit_menu.addAction(self.editor.paste_action)
         edit_menu.addSeparator()
-        edit_menu.addAction(self._a_selectall)
+        edit_menu.addAction(self.editor.selectall_action)
         # edit_menu.addAction(self._a_goto)
-        edit_menu.addAction(self._a_find)
-        edit_menu.addAction(self._a_replace)
+        edit_menu.addAction(self.editor.find_action)
+        edit_menu.addAction(self.editor.replace_action)
         edit_menu.addSeparator()
 
         insertion_menu = QMenu("&Insert", self)
@@ -710,11 +677,12 @@ class MainWindow(QMainWindow):
                 filename, Qt.TextElideMode.ElideMiddle, 150
             )
             self._a_reload.setText(f"Reload {path_text}")
+            basename, _ = os.path.splitext(filename)
         else:
-            filename = "untitled"
+            basename = "untitled"
             self._a_reload.setDisabled(True)
             self._a_reload.setText("Reload")
-        self.setWindowTitle(f"{filename}[*] - {APP_TITLE}")
+        self.setWindowTitle(f"{basename}[*] - {APP_TITLE}")
         self.setWindowFilePath(self._filepath)
 
     def _on_editor_change(self):
