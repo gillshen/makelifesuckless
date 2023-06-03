@@ -181,63 +181,39 @@ class MainWindow(QMainWindow):
 
         # create actions
         # File and app actions
-        self._a_new = QAction("&New", self)
-        self._a_new.triggered.connect(self.new_file)
-        self._a_new.setShortcut(QKeySequence("Ctrl+n"))
-
-        self._a_newblank = QAction("New &Blank", self)
+        self._a_new = self._create_action("&New", "Ctrl+n")
+        self._a_new.triggered.connect(
+            self.new_file,
+        )
+        self._a_newblank = self._create_action("New &Blank", "Ctrl+Shift+n")
         self._a_newblank.triggered.connect(self.new_blank_file)
-        self._a_newblank.setShortcut(QKeySequence("Ctrl+Shift+n"))
-
-        self._a_open = QAction("&Open...", self)
+        self._a_open = self._create_action("&Open...", "Ctrl+o")
         self._a_open.triggered.connect(self.open_file)
-        self._a_open.setShortcut(QKeySequence("Ctrl+o"))
-
-        self._a_reload = QAction("&Reload", self)
+        self._a_reload = self._create_action("&Reload", "F5")
         self._a_reload.triggered.connect(self.reload_file)
-        self._a_reload.setShortcut(QKeySequence("F5"))
         self._a_reload.setDisabled(True)
-
-        self._a_save = QAction("&Save", self)
+        self._a_save = self._create_action("&Save", "Ctrl+s")
         self._a_save.triggered.connect(self.save_file)
-        self._a_save.setShortcut(QKeySequence("Ctrl+s"))
-
-        self._a_saveas = QAction("Save &As...", self)
+        self._a_saveas = self._create_action("Save &As...", "Ctrl+Shift+s")
         self._a_saveas.triggered.connect(self.save_file_as)
-        self._a_saveas.setShortcut(QKeySequence("Ctrl+Shift+s"))
-
-        self._a_clear = QAction("&Clear Console", self)
+        self._a_clear = self._create_action("&Clear Console", "Ctrl+Shift+c")
         self._a_clear.triggered.connect(self.console.clear)
-        self._a_clear.setShortcut(QKeySequence("Ctrl+Shift+c"))
-
-        self._a_quit = QAction("&Quit", self)
+        self._a_quit = self._create_action("&Quit", "Ctrl+q")
         self._a_quit.triggered.connect(self.close)
-        self._a_quit.setShortcut(QKeySequence("Ctrl+q"))
 
         # Edit actions
-        self._a_undo = QAction("&Undo", self)
+        self._a_undo = self._create_action("&Undo", "Ctrl+z")
         self._a_undo.triggered.connect(self.editor.undo)
-        self._a_undo.setShortcut("Ctrl+z")
-
-        self._a_redo = QAction("&Redo", self)
+        self._a_redo = self._create_action("&Redo", "Ctrl+y")
         self._a_redo.triggered.connect(self.editor.redo)
-        self._a_redo.setShortcut("Ctrl+y")
-
-        self._a_cut = QAction("Cu&t", self)
+        self._a_cut = self._create_action("Cu&t", "Ctrl+x")
         self._a_cut.triggered.connect(self.editor.cut)
-        self._a_cut.setShortcut("Ctrl+x")
-
-        self._a_copy = QAction("&Copy", self)
+        self._a_copy = self._create_action("&Copy", "Ctrl+c")
         self._a_copy.triggered.connect(self.editor.copy)
-        self._a_copy.setShortcut("Ctrl+c")
-
-        self._a_paste = QAction("&Paste", self)
+        self._a_paste = self._create_action("&Paste", "Ctrl+v")
         self._a_paste.triggered.connect(self.editor.paste)
-        self._a_paste.setShortcut("Ctrl+v")
-
-        self._a_selectall = QAction("Select &All", self)
+        self._a_selectall = self._create_action("Select &All", "Ctrl+a")
         self._a_selectall.triggered.connect(self.editor.selectAll)
-        self._a_selectall.setShortcut(QKeySequence("Ctrl+a"))
 
         # avoid breaking counterpart bindings in the console
         for action in [
@@ -257,96 +233,59 @@ class MainWindow(QMainWindow):
         # self._a_goto.setDisabled(True)
 
         # TODO
-        self._a_find = QAction("&Find...", self)
-        self._a_find.triggered.connect(lambda: print("editor.find"))
-        self._a_find.setShortcut(QKeySequence("Ctrl+f"))
+        self._a_find = self._create_action("&Find...", "Ctrl+f")
         self._a_find.setDisabled(True)
-
-        # TODO
-        self._a_replace = QAction("&Replace...", self)
-        self._a_replace.triggered.connect(lambda: print("editor.replace"))
-        self._a_replace.setShortcut(QKeySequence("Ctrl+h"))
+        self._a_replace = self._create_action("&Replace...", "Ctrl+h")
         self._a_replace.setDisabled(True)
 
-        self._a_insertact = QAction("&Activity", self)
-        self._a_insertact.triggered.connect(self.insert_activity)
-        self._a_insertact.setShortcut(QKeySequence("Ctrl+Alt+a"))
-
-        self._a_insertaward = QAction("Awar&d", self)
-        self._a_insertaward.triggered.connect(self.insert_award)
-        self._a_insertaward.setShortcut(QKeySequence("Ctrl+Alt+d"))
-
-        self._a_insertedu = QAction("&Education", self)
-        self._a_insertedu.triggered.connect(self.insert_education)
-        self._a_insertedu.setShortcut(QKeySequence("Ctrl+Alt+e"))
-
-        self._a_insertskills = QAction("&Skillset", self)
-        self._a_insertskills.triggered.connect(self.insert_skillset)
-        self._a_insertskills.setShortcut(QKeySequence("Ctrl+Alt+s"))
-
-        self._a_inserttest = QAction("&Test", self)
-        self._a_inserttest.triggered.connect(self.insert_test)
-        self._a_inserttest.setShortcut(QKeySequence("Ctrl+Alt+t"))
+        self._a_activity = self._create_action("&Activity", "Ctrl+Alt+a")
+        self._a_activity.triggered.connect(self.insert_activity)
+        self._a_award = self._create_action("Awar&d", "Ctrl+Alt+d")
+        self._a_award.triggered.connect(self.insert_award)
+        self._a_edu = self._create_action("&Education", "Ctrl+Alt+e")
+        self._a_edu.triggered.connect(self.insert_education)
+        self._a_skills = self._create_action("&Skillset", "Ctrl+Alt+s")
+        self._a_skills.triggered.connect(self.insert_skillset)
+        self._a_test = self._create_action("&Test", "Ctrl+Alt+t")
+        self._a_test.triggered.connect(self.insert_test)
 
         # LaTeX actions
-        self._a_parse = QAction("&Parse", self)
+        self._a_parse = self._create_action("&Parse", "Ctrl+`")
         self._a_parse.triggered.connect(self.show_parse_tree)
-        self._a_parse.setShortcut(QKeySequence("Ctrl+`"))
         self._a_parse.setToolTip("Show the parse tree in the console")
-
-        self._a_runlatex = QAction("&Run", self)
+        self._a_runlatex = self._create_action("&Run", "Ctrl+r")
         self._a_runlatex.triggered.connect(self.run_latex)
-        self._a_runlatex.setShortcut(QKeySequence("Ctrl+r"))
-
-        self._a_importsettings = QAction("&Import Settings...", self)
-        self._a_importsettings.triggered.connect(self.import_settings)
-        self._a_importsettings.setShortcut(QKeySequence("Ctrl+i"))
-        self._a_importsettings.setToolTip("Load LaTeX settings from a file")
-
-        self._a_exportsettings = QAction("&Export Settings...", self)
-        self._a_exportsettings.triggered.connect(self.export_settings)
-        self._a_exportsettings.setShortcut(QKeySequence("Ctrl+Shift+e"))
-        self._a_exportsettings.setToolTip("Save current LaTeX settings to a file")
-
-        self._a_restoredefault = QAction("Restore &Default", self)
+        self._a_impsettings = self._create_action("&Import Settings...", "Ctrl+i")
+        self._a_impsettings.triggered.connect(self.import_settings)
+        self._a_impsettings.setToolTip("Load LaTeX settings from a file")
+        self._a_expsettings = self._create_action("&Export Settings...", "Ctrl+Shift+e")
+        self._a_expsettings.triggered.connect(self.export_settings)
+        self._a_expsettings.setToolTip("Save current LaTeX settings to a file")
+        self._a_restoredefault = self._create_action("Restore &Default", "Ctrl+Shift+d")
         self._a_restoredefault.triggered.connect(self.restore_default)
-        self._a_restoredefault.setShortcut(QKeySequence("Ctrl+Shift+d"))
         self._a_restoredefault.setToolTip("Restore default LaTeX settings")
 
         # Editor options
-        self._a_largerfont = QAction("Zoom &In", self)
+        self._a_largerfont = self._create_action("Zoom &In", "Ctrl+=")
         self._a_largerfont.triggered.connect(self.increment_editor_font_size)
-        self._a_largerfont.setShortcut(QKeySequence("Ctrl+="))
-
-        self._a_smallerfont = QAction("Zoom &Out", self)
+        self._a_smallerfont = self._create_action("Zoom &Out", "Ctrl+-")
         self._a_smallerfont.triggered.connect(self.decrement_editor_font_size)
-        self._a_smallerfont.setShortcut(QKeySequence("Ctrl+-"))
-
-        self._a_togglewrap = QAction("&Wrap Lines", self)
+        self._a_togglewrap = self._create_action("&Wrap Lines", "Alt+z")
         self._a_togglewrap.triggered.connect(self.toggle_wrap)
-        self._a_togglewrap.setShortcut(QKeySequence("Alt+z"))
         self._a_togglewrap.setCheckable(True)
-
-        self._a_toggleopenpdf = QAction("Open &PDF When Done", self)
+        self._a_toggleopenpdf = self._create_action("Open &PDF When Done", "Alt+p")
         self._a_toggleopenpdf.triggered.connect(self.toggle_open_pdf)
-        self._a_toggleopenpdf.setShortcut(QKeySequence("Alt+p"))
         self._a_toggleopenpdf.setCheckable(True)
-
-        self._a_configdialog = QAction("&More...", self)
+        self._a_configdialog = self._create_action("&More...", "Ctrl+,")
         self._a_configdialog.triggered.connect(self.open_config_dialog)
-        self._a_configdialog.setShortcut(QKeySequence("Ctrl+,"))
 
-        self._a_enterprompt = QAction("&Enter Prompt...", self)
+        # Chat options
+        self._a_enterprompt = self._create_action("&Enter Prompt...", "Ctrl+e")
         self._a_enterprompt.triggered.connect(self.open_prompt_window)
-        self._a_enterprompt.setShortcut(QKeySequence("Ctrl+e"))
-
-        self._a_reset_chat = QAction("&Reset Context", self)
+        self._a_reset_chat = self._create_action("&Reset Context", "Ctrl+Shift+r")
         self._a_reset_chat.triggered.connect(self.reset_chat_context)
-        self._a_reset_chat.setShortcut(QKeySequence("Ctrl+Shift+r"))
-
-        self._a_paramsdialog = QAction("&Parameters...", self)
+        self._a_paramsdialog = self._create_action("&Parameters...", "Ctrl+p")
         self._a_paramsdialog.triggered.connect(self.open_params_dialog)
-        self._a_paramsdialog.setShortcut(QKeySequence("Ctrl+p"))
         self._a_paramsdialog.setDisabled(True)  # TODO
 
         self._gpt_actions = self._create_gpt_actions()
@@ -381,6 +320,11 @@ class MainWindow(QMainWindow):
             return chat.Params.from_json(LAST_USED_CHAT_PARAMS)
         except (FileNotFoundError, json.JSONDecodeError):
             return chat.Params()
+
+    def _create_action(self, text: str, shortcut: str) -> QAction:
+        action = QAction(text, self)
+        action.setShortcut(shortcut)
+        return action
 
     def _create_menus(self):
         # File menu
@@ -420,11 +364,11 @@ class MainWindow(QMainWindow):
 
         insertion_menu = QMenu("&Insert", self)
         edit_menu.addMenu(insertion_menu)
-        insertion_menu.addAction(self._a_insertact)
-        insertion_menu.addAction(self._a_insertaward)
-        insertion_menu.addAction(self._a_insertedu)
-        insertion_menu.addAction(self._a_insertskills)
-        insertion_menu.addAction(self._a_inserttest)
+        insertion_menu.addAction(self._a_activity)
+        insertion_menu.addAction(self._a_award)
+        insertion_menu.addAction(self._a_edu)
+        insertion_menu.addAction(self._a_skills)
+        insertion_menu.addAction(self._a_test)
 
         # ChatGPT menu
         self._gpt_menu = self._create_gpt_menu()
@@ -438,8 +382,8 @@ class MainWindow(QMainWindow):
         latex_menu.addAction(self._a_parse)
         latex_menu.addAction(self._a_runlatex)
         latex_menu.addSeparator()
-        latex_menu.addAction(self._a_importsettings)
-        latex_menu.addAction(self._a_exportsettings)
+        latex_menu.addAction(self._a_impsettings)
+        latex_menu.addAction(self._a_expsettings)
         latex_menu.addAction(self._a_restoredefault)
 
         # Options menu
@@ -462,11 +406,11 @@ class MainWindow(QMainWindow):
         # insertion actions
         context_insertion_menu = QMenu("Insert", self)
         context_menu.addMenu(context_insertion_menu)
-        context_insertion_menu.addAction(self._a_insertact)
-        context_insertion_menu.addAction(self._a_insertedu)
-        context_insertion_menu.addAction(self._a_insertskills)
-        context_insertion_menu.addAction(self._a_inserttest)
-        context_insertion_menu.addAction(self._a_insertaward)
+        context_insertion_menu.addAction(self._a_activity)
+        context_insertion_menu.addAction(self._a_edu)
+        context_insertion_menu.addAction(self._a_skills)
+        context_insertion_menu.addAction(self._a_test)
+        context_insertion_menu.addAction(self._a_award)
         # gpt menu and actions
         context_menu.addMenu(self._gpt_menu)
 
