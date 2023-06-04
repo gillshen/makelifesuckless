@@ -2,6 +2,7 @@ import dataclasses
 import datetime
 import re
 import json
+import functools
 
 
 class ParsingError(ValueError):
@@ -15,6 +16,9 @@ class DateError(ParsingError):
 def _compile(keyword):
     return re.compile(rf"^\s*{keyword}\s*[:：](.*)$", flags=re.IGNORECASE)
 
+
+ACADEMIC_TESTS = ["SAT", "ACT", "GRE", "GMAT"]
+ENGLISH_TESTS = ["TOEFL", "IELTS", "DET", "Duolingo"]
 
 NAME = _compile("name")
 EMAIL = _compile("email")
@@ -123,6 +127,7 @@ Website:
 )
 
 
+@functools.total_ordering
 @dataclasses.dataclass
 class SmartDate:
     year: int = None
@@ -130,15 +135,53 @@ class SmartDate:
     day: int = None
     fallback: str = ""
 
+    def __str__(self):
+        if self.resolution == "day":
+            return f"{self.year}-{self.month}-{self.day}"
+        if self.resolution == "month":
+            return f"{self.year}-{self.month}"
+        if self.resolution == "year":
+            return str(self.year)
+        return self.fallback
+
     def __bool__(self):
         return bool(self.is_date or self.fallback)
+
+    def __eq__(self, other: "SmartDate"):
+        return (
+            self.year,
+            self.month,
+            self.day,
+            self.fallback,
+        ) == (
+            other.year,
+            other.month,
+            other.day,
+            other.fallback,
+        )
+
+    def __lt__(self, other: "SmartDate"):
+        # - non-date > date
+        # - later date > earlier date
+        # - more precise date > less precise date
+        return (
+            self.year or float("inf"),
+            self.month or -1,
+            self.day or -1,
+            self.fallback.lower(),
+        ) < (
+            other.year or float("inf"),
+            other.month or -1,
+            other.day or -1,
+            other.fallback.lower(),
+        )
 
     @property
     def is_date(self):
         return self.year is not None
 
     @property
-    def resolution(self) -> str | None:
+    def resolution(self):
         if self.day:
             return "day"
         if self.month:
@@ -183,6 +226,7 @@ class SmartDate:
             return cls(year=year, month=month, day=day)
 
 
+@functools.total_ordering
 @dataclasses.dataclass
 class Education:
     school: str
@@ -196,7 +240,27 @@ class Education:
     rank: str = ""
     courses: str = ""
 
+    def __eq__(self, other: "Education"):
+        return (self.end_date, self.start_date) == (other.end_date, other.start_date)
 
+    def __lt__(self, other: "Education"):
+        return (self.end_date, self.start_date) < (other.end_date, other.start_date)
+
+    @property
+    def course_list(self):
+        if ";" in self.courses:
+            return re.split(r";\s*", self.courses)
+        else:
+            return re.split(r",\s*", self.courses)
+
+    def ap_courses(self) -> list[str]:
+        return [c for c in self.course_list if re.match(r"^AP\b", c)]
+
+    def ib_courses(self) -> list[str]:
+        return [c for c in self.course_list if re.search(r"\b[HS]L\b", c)]
+
+
+@functools.total_ordering
 @dataclasses.dataclass
 class Activity:
     role: str
@@ -209,18 +273,46 @@ class Activity:
     descriptions: list[str] = dataclasses.field(default_factory=list)
     section: str = ""
 
+    def __eq__(self, other: "Education"):
+        return (self.end_date, self.start_date) == (other.end_date, other.start_date)
 
+    def __lt__(self, other: "Education"):
+        return (self.end_date, self.start_date) < (other.end_date, other.start_date)
+
+
+@functools.total_ordering
 @dataclasses.dataclass
 class Award:
     name: str
     date: SmartDate = SmartDate()
 
+    def __eq__(self, other: "Award"):
+        return self.date == other.date
 
+    def __lt__(self, other: "Award"):
+        return self.date < other.date
+
+
+@functools.total_ordering
 @dataclasses.dataclass
 class Test:
     name: str
     score: str = ""
     date: SmartDate = SmartDate()
+
+    def __eq__(self, other: "Test"):
+        return self.date == other.date
+
+    def __lt__(self, other: "Test"):
+        return self.date < other.date
+
+    @property
+    def is_academic(self):
+        return self.name in ACADEMIC_TESTS
+
+    @property
+    def is_language(self):
+        return self.name in ENGLISH_TESTS
 
 
 @dataclasses.dataclass
@@ -242,6 +334,18 @@ class CV:
     awards: list[Award] = dataclasses.field(default_factory=list)
     tests: list[Test] = dataclasses.field(default_factory=list)
     skillsets: list[SkillSet] = dataclasses.field(default_factory=list)
+
+    @property
+    def last_education(self):
+        if not self.education:
+            return
+        return sorted(self.education)[-1]
+
+    def academic_tests(self) -> list[Test]:
+        return [t for t in self.tests if t.name in ACADEMIC_TESTS]
+
+    def english_tests(self) -> list[Test]:
+        return [t for t in self.tests if t.is_language]
 
     def activities_of_section(self, section: str = ""):
         return [a for a in self.activities if a.section == section]

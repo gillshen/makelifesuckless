@@ -178,4 +178,6 @@ v*/config
 dist(-\d+(\.\d+)?)?
 keys.json
 
+*.xlsx
+
 .vscode
