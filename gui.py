@@ -1,4 +1,3 @@
-import sys
 import os
 import traceback
 import dataclasses
@@ -8,15 +7,14 @@ import datetime
 from PyQt6.QtCore import Qt, QProcess, QObject, QThread, pyqtSignal
 from PyQt6.QtGui import (
     QAction,
-    QKeySequence,
     QFont,
+    QColor,
     QCloseEvent,
     QFontMetrics,
     QTextCursor,
     QTextCharFormat,
 )
 from PyQt6.QtWidgets import (
-    QApplication,
     QMainWindow,
     QMenu,
     QPlainTextEdit,
@@ -90,6 +88,8 @@ class Config:
     console_font: str = "Consolas"
     console_font_size: int = 10
     console_foreground: str = "#205E80"
+    console_error_foreground: str = "#8B0000"  # dark red
+    console_log_foreground: str = "#929fA5"
     console_background: str = "#F8F6F2"
     console_wrap_lines: bool = True
 
@@ -445,7 +445,10 @@ class MainWindow(QMainWindow):
         def _on_completion_success():
             self.console.xappend("")
             tokens_used = self._gpt.token_count(self._chat_params.model)
-            self.console.xappend(f"<b>>>> {tokens_used}/{chat._MAX_TOKENS}</b>")
+            self.console.xappend(
+                f">>> {tokens_used}/{chat._MAX_TOKENS}",
+                color=self._config.console_log_foreground,
+            )
             self.console.xappend("")
             self._set_gpt_enabled(True)
             thread.deleteLater()
@@ -459,10 +462,10 @@ class MainWindow(QMainWindow):
         self._worker.error.connect(_on_completion_error)
 
         self._set_gpt_enabled(False)
-        self.console.xappend(f"<b>>>> Prompt</b>")
+        self.console.xappend(f">>> Prompt", weight=700)
         self.console.xappend(prompt)
         self.console.xappend("")
-        self.console.xappend(f"<b>>>> {self._chat_params.model}</b>")
+        self.console.xappend(f">>> {self._chat_params.model}", weight=700)
         self.console.xappend("")
         thread.start()
 
@@ -553,16 +556,17 @@ class MainWindow(QMainWindow):
         self.settings_frame.load_settings(settings)
 
     def closeEvent(self, event: QCloseEvent):
-        # Ask user to handle unsaved change if any
-        if self.isWindowModified() and not _ask_yesno(
-            parent=self,
-            default_yes=True,
-            text=(
-                "Your document has unsaved changes.\n"
-                "Discard the changes and close the program?"
-            ),
-        ):
-            event.ignore()
+        if self.isWindowModified():
+            # Ask user to handle unsaved change
+            q = "Your document has unsaved changes.\nDiscard the changes and close the program?"
+            msg_box = QMessageBox(parent=self, text=q)
+            msg_box.setIcon(QMessageBox.Icon.Question)
+            msg_box.setWindowTitle(APP_TITLE)
+            _ = QMessageBox.StandardButton
+            msg_box.setStandardButtons(_.Yes | _.No)
+            msg_box.setDefaultButton(_.Yes)
+            if msg_box.exec() == _.No:
+                event.ignore()
         else:
             # Save current GPT parameters
             # json_dump(self._chat_params, filepath=LAST_USED_CHAT_PARAMS)
@@ -645,7 +649,7 @@ class MainWindow(QMainWindow):
             show_error(parent=self, text=f"Sorry, something went wrong.\n\n{message}")
             return
 
-        self.console.xappend("<b>Operation completed successfully.</b>")
+        self.console.xappend("Operation completed successfully.", weight=700)
         self.console.xappend("")
 
         now = datetime.datetime.now()
@@ -665,7 +669,10 @@ class MainWindow(QMainWindow):
             self._handle_exc(e)
 
     def _handle_exc(self, e: Exception, parent=None):
-        self.console.xappend(traceback.format_exc())
+        self.console.xappend(
+            traceback.format_exc(),
+            color=self._config.console_error_foreground,
+        )
         show_error(parent=parent or self, text=f"{e.__class__.__name__}\n\n{e}")
 
     def _update_filepath(self):
@@ -865,7 +872,7 @@ class MainWindow(QMainWindow):
             prompt_head = w.get_prompt()
             self._exec_prompt(prompt_head, parent=w)
 
-        w.send.triggered.connect(_run)
+        w.send_action.triggered.connect(_run)
         self._gpt_windows.append(w)
         w.show()
 
@@ -877,7 +884,7 @@ class MainWindow(QMainWindow):
 class GptWindow(QDialog):
     def __init__(self):
         super().__init__(None, Qt.WindowType.Window)
-        self.send = QAction(self)
+        self.send_action = QAction(self)
 
         layout = QVBoxLayout()
         self.setLayout(layout)
@@ -892,15 +899,15 @@ class GptWindow(QDialog):
         button_frame_layout = QHBoxLayout()
         button_frame.setLayout(button_frame_layout)
         self.send_button = QPushButton("Send", self)
-        self.send_button.clicked.connect(self.send.trigger)
+        self.send_button.clicked.connect(self.send_action.trigger)
         self.send_button.setToolTip("Alternatively, press Ctrl+Return")
         button_frame_layout.addWidget(
             self.send_button, alignment=Qt.AlignmentFlag.AlignRight
         )
 
         # trigger self.run_action with ctrl+return
-        self.addAction(self.send)
-        self.send.setShortcut(QKeySequence("Ctrl+Return"))
+        self.addAction(self.send_action)
+        self.send_action.setShortcut("Ctrl+Return")
 
     def get_prompt(self):
         return self.editor.toPlainText()
@@ -1589,14 +1596,16 @@ class Separator(QFrame):
 class Console(QTextEdit):
     # handles process outputs and supports auto-scrolling
 
-    def xappend(self, text: str):
+    def xappend(self, text: str, weight=400, color: str = ""):
         # to work around the problem of append() inserting at the position
         # of the cursor instead of the end of the document
 
         # setCharFormat necessary to prevent the inserted content inheriting
         # the style at the cursor position
         char_format = QTextCharFormat()
-        char_format.setFontWeight(400)
+        char_format.setFontWeight(weight)
+        if color:
+            char_format.setForeground(QColor(color))
 
         cursor = self.textCursor()
         cursor.movePosition(QTextCursor.MoveOperation.End)
@@ -1643,22 +1652,6 @@ class ChatWorker(QObject):
             self.finished.emit()
 
 
-def _ask_yesno(
-    *,
-    parent=None,
-    text="",
-    title=APP_TITLE,
-    icon=QMessageBox.Icon.Question,
-    default_yes=True,
-):
-    msg_box = QMessageBox(parent=parent, text=text, icon=icon)
-    msg_box.setWindowTitle(title)
-    _ = QMessageBox.StandardButton
-    msg_box.setStandardButtons(_.Yes | _.No)
-    msg_box.setDefaultButton(_.Yes if default_yes else _.No)
-    return msg_box.exec() == _.Yes
-
-
 def show_message(*, parent=None, icon=None, **kwargs):
     msg_box = QMessageBox(parent=parent, **kwargs)
     msg_box.setWindowTitle(APP_TITLE)
@@ -1684,11 +1677,3 @@ def silent_remove(filepath):
 def json_dump(data, filepath: str, indent=4):
     with open(filepath, "w", encoding="utf-8") as f:
         json.dump(dataclasses.asdict(data), f, indent=indent)
-
-
-def main():
-    app = QApplication(sys.argv)
-    app.setQuitOnLastWindowClosed(True)
-    window = MainWindow()
-    window.show()
-    sys.exit(app.exec())
