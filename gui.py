@@ -2,9 +2,10 @@ import os
 import traceback
 import dataclasses
 import json
+import time
 import datetime
 
-from PyQt6.QtCore import Qt, QProcess, QObject, QThread, pyqtSignal
+from PyQt6.QtCore import Qt, QProcess, QThread, pyqtSignal
 from PyQt6.QtGui import (
     QAction,
     QFont,
@@ -116,7 +117,7 @@ class MainWindow(QMainWindow):
         # chat completion parameters
         self._chat_params = self._get_chat_params()
         self._gpt = chat.Chat()
-        self._threads = []
+        self._chat_threads = []
 
         # references to stand-alone GPT prompt windows
         self._gpt_windows = []
@@ -421,26 +422,30 @@ class MainWindow(QMainWindow):
             show_error(parent=parent or self, text="The prompt must not be empty.")
             return
 
-        thread = QThread()
+        thread = ChatThread(gpt=self._gpt, prompt=prompt, params=self._chat_params)
         # Must keep a reference to the thread and not delete it
         # prematurely, but it should be deleted eventually.
         # The most simple and robust solution seems to be holding threads
         # in a list and and delete the old one when a new one is created
         try:
-            self._threads.pop()  # delete the old one if exists
+            self._chat_threads.pop()  # delete the old one if exists
         except IndexError:
             pass
-        self._threads.append(thread)
+        self._chat_threads.append(thread)
 
-        self._worker = ChatWorker(
-            gpt=self._gpt, prompt=prompt, params=self._chat_params
-        )
-        self._worker.moveToThread(thread)
+        thread.progress.connect(self._stream_completion)
 
-        thread.started.connect(self._worker.run)
-        self._worker.progress.connect(self._stream_completion)
-        self._worker.finished.connect(thread.quit)
-        self._worker.finished.connect(self._worker.deleteLater)
+        def _on_wait_finish():
+            # remove the periods that have been printed
+            cursor = self.console.textCursor()
+            cursor.movePosition(QTextCursor.MoveOperation.End)
+            cursor.movePosition(
+                QTextCursor.MoveOperation.StartOfLine,
+                QTextCursor.MoveMode.KeepAnchor,
+            )
+            cursor.removeSelectedText()
+
+        thread.wait_finished.connect(_on_wait_finish)
 
         def _on_completion_success():
             self.console.xappend("")
@@ -451,6 +456,7 @@ class MainWindow(QMainWindow):
             )
             self.console.xappend("")
             self._set_gpt_enabled(True)
+            thread.quit()
             thread.deleteLater()
 
         thread.finished.connect(_on_completion_success)
@@ -458,8 +464,10 @@ class MainWindow(QMainWindow):
         def _on_completion_error(e: Exception):
             self._handle_exc(e, parent=parent)
             self._set_gpt_enabled(True)
+            thread.quit()
+            thread.deleteLater()
 
-        self._worker.error.connect(_on_completion_error)
+        thread.error.connect(_on_completion_error)
 
         self._set_gpt_enabled(False)
         self.console.xappend(f">>> Prompt", weight=700)
@@ -1616,8 +1624,10 @@ class Console(QTextEdit):
         self.ensureCursorVisible()
 
 
-class ChatWorker(QObject):
+class ChatThread(QThread):
     progress = pyqtSignal(str)
+    waiting = pyqtSignal()
+    wait_finished = pyqtSignal()
     finished = pyqtSignal()
     error = pyqtSignal(Exception)
 
@@ -1632,8 +1642,13 @@ class ChatWorker(QObject):
         self.gpt = gpt
         self.prompt = prompt
         self.params = params
+        self.wait_thread = ChatWaitThread()
 
     def run(self):
+        self.wait_thread.waiting.connect(self._signal_wait)
+        self.wait_thread.start()
+        waiting = True
+
         kwargs = {"model": self.params.model, "stream": True}
         if self.params.temperature is not None:
             kwargs["temperature"] = self.params.temperature
@@ -1645,11 +1660,45 @@ class ChatWorker(QObject):
             kwargs["frequency_penalty"] = self.params.frequency_penalty
         try:
             for content in self.gpt.send(self.prompt, keep_context=True, **kwargs):
+                # upon receiving the first response, stop sending the wait signal
+                if waiting:
+                    self._on_wait_finish()
+                    waiting = False
                 self.progress.emit(content)
         except Exception as e:
+            if waiting:
+                self._on_wait_finish()
             self.error.emit(e)
         else:
             self.finished.emit()
+        # finally:
+        #     self.wait_thread.wait()
+        #     # causes QThread: Destroyed while thread is still running
+        #     self.wait_thread.deleteLater()
+
+    def _signal_wait(self):
+        self.progress.emit(". ")
+
+    def _on_wait_finish(self):
+        self.wait_thread.waiting.disconnect(self._signal_wait)
+        self.wait_thread.quit()
+        self.wait_finished.emit()
+        time.sleep(0.1)  # allow app some time to clean up
+
+
+class ChatWaitThread(QThread):
+    # run while the chat thread is waiting for response
+    waiting = pyqtSignal()
+
+    def run(self):
+        waittime = 0
+        interval = 0.5
+        while True:
+            if waittime > 20:
+                return
+            self.waiting.emit()
+            time.sleep(interval)
+            waittime += interval
 
 
 def show_message(*, parent=None, icon=None, **kwargs):
