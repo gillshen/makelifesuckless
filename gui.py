@@ -678,7 +678,8 @@ class MainWindow(QMainWindow):
         cv, _ = txtparse.parse(self.editor.toPlainText())
         basename = f"case_{timestamp()}.xlsx"
         dest_path = os.path.join("output", basename)
-        thread = ExcelThread(cv=cv, filepath=dest_path)
+        thread = ExcelThread(cv=cv)
+        error = False
 
         try:
             self._excel_threads.pop()
@@ -689,7 +690,10 @@ class MainWindow(QMainWindow):
         thread.started.connect(lambda: self._console_log("Creating Excel..."))
         thread.progress.connect(self._console_log)
 
-        def _on_excel_success():
+        def _on_excel_success(wb: excel.Workbook):
+            if not os.path.isdir("output"):
+                os.mkdir("output")
+            wb.save(dest_path)
             os.startfile(dest_path)
             self._a_casebook.setEnabled(True)
             thread.quit()
@@ -697,9 +701,15 @@ class MainWindow(QMainWindow):
         thread.completed.connect(_on_excel_success)
 
         def _on_excel_error(e: Exception):
+            # show error once only
+            nonlocal error
+            if error:
+                return
             self._handle_exc(e)
             self._a_casebook.setEnabled(True)
+            thread.quit_subthreads()
             thread.quit()
+            error = True
 
         thread.error.connect(_on_excel_error)
 
@@ -1732,13 +1742,12 @@ class ChatWaitThread(QThread):
 
 class ExcelThread(QThread):
     progress = pyqtSignal(str)
-    completed = pyqtSignal()
+    completed = pyqtSignal(excel.Workbook)
     error = pyqtSignal(Exception)
 
-    def __init__(self, cv: txtparse.CV, filepath: str, parent=None):
+    def __init__(self, cv: txtparse.CV, parent=None):
         super().__init__(parent)
         self.cv = cv
-        self.path = filepath
 
         self._activity_translators = []
         for i, act in enumerate(cv.activities):
@@ -1794,8 +1803,13 @@ class ExcelThread(QThread):
         if self._activity_translators or self._award_translators:
             return
         wb = excel.create_casebook(self.cv)
-        wb.save(self.path)
-        self.completed.emit()
+        self.completed.emit(wb)
+
+    def quit_subthreads(self):
+        for thread in self._activity_translators:
+            thread.quit()
+        for thread in self._award_translators:
+            thread.quit()
 
 
 class Translator(QThread):
