@@ -41,7 +41,7 @@ def create_casebook(cv: txtparse.CV) -> Workbook:
     ws.column_dimensions["F"].width = 50
     ws.column_dimensions["G"].width = 15
     ws.column_dimensions["H"].width = 5
-    ws.column_dimensions["J"].width = 10
+    ws.column_dimensions["J"].width = 15
     ws.column_dimensions["K"].width = 30
     ws.column_dimensions["L"].width = 10
     # spacers
@@ -63,21 +63,50 @@ def create_casebook(cv: txtparse.CV) -> Workbook:
     encase(ws, "E2:J2")
 
     # name, school, target major
-    new_row = create_profile_block(ws, row=4, cv=cv)
+    next_row = create_profile_block(ws, row=4, cv=cv)
     # grades & tests
-    new_row = create_grades_block(ws, row=new_row + 1, cv=cv)
+    next_row = create_grades_block(ws, row=next_row + 1, cv=cv)
+    # psych testing
+    next_row = create_psych_block(ws, row=next_row + 1)
     # schools applied to
-    create_appications_block(ws, row=new_row + 1)
+    create_appications_block(ws, row=next_row + 1)
 
     # activities
-    new_row = create_activities_block(ws, row=4, cv=cv)
+    next_row = create_activities_block(ws, row=4, cv=cv)
     # awards
-    create_awards_block(ws, row=new_row + 1, cv=cv)
+    create_awards_block(ws, row=next_row + 1, cv=cv)
 
     # personal brand
     create_h1(ws, "J4", "L4", "个人品牌")
-    ws.merge_cells("J5:L7")
-    encase(ws, "J5:L7")
+    encase(ws, "J5:L7", merge=True)
+
+    # personal statement
+    create_h1(ws, "J8", "L8", "Common App 主文书基本思路")
+    encase(ws, "J9:L13", merge=True)
+
+    # covid impact
+    create_h1(ws, "J14", "L14", "Common App 疫情影响")
+    encase(ws, "J15:L16", merge=True)
+
+    # additional info
+    create_h1(ws, "J17", "L17", "Common App 补充信息")
+    encase(ws, "J18:L19", merge=True)
+
+    # recommenders
+    create_h1(ws, "J20", "L20", "推荐人人选")
+    encase(ws, "J21:L22", merge=True)
+
+    # supp materials
+    create_h1(ws, "J23", "L23", "补充材料")
+    for r, text in enumerate(["作品集", "视频", "第三方面试", "校友面试", "研究报告"]):
+        write(ws, row=24 + r, column="J", value=text)
+        ws.merge_cells(f"K{24+r}:L{24+r}")
+    encase(ws, "J24:L28")
+
+    # UC essays
+    next_row = create_uc_block(ws, row=30)
+    # supp essays
+    create_supp_essays_block(ws, row=next_row + 1)
 
     return wb
 
@@ -143,6 +172,34 @@ def create_grades_block(ws, row, cv: txtparse.CV) -> int:
     return row + 21
 
 
+def create_psych_block(ws, row) -> int:
+    create_h1(ws, f"B{row}", f"C{row}", "专业职业规划测评结果")
+
+    write(ws, row=row + 1, column="B", value="霍兰德兴趣职业测评", style=H2_STYLE)
+    ws.merge_cells(f"B{row+1}:C{row+1}")
+    write(ws, row=row + 2, column="B")
+    write(ws, row=row + 2, column="C")
+
+    write(ws, row=row + 3, column="B", value="MBTI性格测评", style=H2_STYLE)
+    ws.merge_cells(f"B{row+3}:C{row+3}")
+    write(ws, row=row + 4, column="B")
+    write(ws, row=row + 4, column="C")
+
+    write(ws, row=row + 5, column="B", value="多元智能测评", style=H2_STYLE)
+    ws.merge_cells(f"B{row+5}:C{row+5}")
+    write(ws, row=row + 6, column="B")
+    ws.merge_cells(f"B{row+6}:C{row+6}")
+
+    write(ws, row=row + 7, column="B", value="职业价值观测评", style=H2_STYLE)
+    ws.merge_cells(f"B{row+7}:C{row+7}")
+    write(ws, row=row + 8, column="B")
+    ws.merge_cells(f"B{row+8}:C{row+8}")
+
+    encase(ws, f"B{row+1}:C{row+8}")
+    # return the next row
+    return row + 9
+
+
 def create_appications_block(ws, row):
     red_bold = InlineFont(color="ff0000", b=True)
     create_h1(
@@ -183,7 +240,7 @@ def create_activities_block(ws, row, cv: txtparse.CV) -> int:
                 ws,
                 row=r,
                 column="E",
-                value=f"{act.org + ' | ' if act.org else ''}{act.role}",
+                value=f"{act.org}\n{act.role}".strip(),
                 alignment=V_CENTERED,
             )
             write(
@@ -234,6 +291,38 @@ def create_awards_block(ws, row, cv: txtparse.CV):
     encase(ws, f"E{row+1}:H{r-1}")
 
 
+def create_uc_block(ws, row) -> int:
+    create_h1(ws, f"J{row}", f"L{row}", "UC文书基本思路")
+
+    write(ws, row=row + 1, column="J", value="文书题目", style=H2_STYLE)
+    write(ws, row=row + 1, column="K", value="内容（红色字体为重点）", style=H2_STYLE)
+    ws.merge_cells(f"K{row+1}:L{row+1}")
+
+    for r in range(row + 2, row + 14, 3):
+        write(ws, row=r, column="J")
+        write(ws, row=r, column="K")
+        ws.merge_cells(f"J{r}:J{r+2}")
+        ws.merge_cells(f"K{r}:L{r+2}")
+
+    encase(ws, f"J{row+1}:L{row+13}")
+    return row + 14
+
+
+def create_supp_essays_block(ws, row):
+    create_h1(ws, f"J{row}", f"L{row}", "补充文书基本思路")
+    write(ws, row=row + 1, column="J", value="文书题目", style=H2_STYLE)
+    write(ws, row=row + 1, column="K", value="内容（红色字体为重点）", style=H2_STYLE)
+    ws.merge_cells(f"K{row+1}:L{row+1}")
+
+    for r in range(row + 2, row + 11, 3):
+        write(ws, row=r, column="J")
+        write(ws, row=r, column="K")
+        ws.merge_cells(f"J{r}:J{r+2}")
+        ws.merge_cells(f"K{r}:L{r+2}")
+
+    encase(ws, f"J{row+1}:L{row+10}")
+
+
 def write(ws, addr="", row="", column="", value="", **kwargs):
     addr = addr or f"{column}{row}"
     if not addr:
@@ -257,12 +346,15 @@ def create_h1(ws, start, end, value):
         cell.style = H1_STYLE
 
 
-def encase(ws, start_end="", *, start="", end=""):
+def encase(ws, start_end=None, *, start=None, end=None, merge=False):
     """Surround the area defined by start:end with medium borders."""
     if start_end:
         start, end = start_end.split(":")
     start_cell = ws[start]
     end_cell = ws[end]
+
+    if merge:
+        ws.merge_cells(f"{start}:{end}")
 
     for cell in area(ws, start=start, end=end):
         border_params = dict(top=THIN, bottom=THIN, left=THIN, right=THIN)
