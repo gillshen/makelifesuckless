@@ -459,7 +459,6 @@ class MainWindow(QMainWindow):
             self.console.xappend("")
             self._set_gpt_enabled(True)
             thread.quit()
-            thread.deleteLater()
 
         thread.finished.connect(_on_completion_success)
 
@@ -467,7 +466,6 @@ class MainWindow(QMainWindow):
             self._handle_exc(e, parent=parent)
             self._set_gpt_enabled(True)
             thread.quit()
-            thread.deleteLater()
 
         thread.error.connect(_on_completion_error)
 
@@ -695,7 +693,6 @@ class MainWindow(QMainWindow):
             os.startfile(dest_path)
             self._a_casebook.setEnabled(True)
             thread.quit()
-            thread.deleteLater()
 
         thread.completed.connect(_on_excel_success)
 
@@ -703,7 +700,6 @@ class MainWindow(QMainWindow):
             self._handle_exc(e)
             self._a_casebook.setEnabled(True)
             thread.quit()
-            thread.deleteLater()
 
         thread.error.connect(_on_excel_error)
 
@@ -1708,10 +1704,6 @@ class ChatThread(QThread):
             self.error.emit(e)
         else:
             self.finished.emit()
-        # finally:
-        #     self.wait_thread.wait()
-        #     # causes QThread: Destroyed while thread is still running
-        #     self.wait_thread.deleteLater()
 
     def _signal_wait(self):
         self.progress.emit(". ")
