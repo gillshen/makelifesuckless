@@ -43,6 +43,7 @@ from PyQt6.QtWidgets import (
 import txtparse
 import tex
 import chat
+import excel
 from cveditor import CvEditor
 
 APP_TITLE = "Curriculum Victim"
@@ -118,6 +119,7 @@ class MainWindow(QMainWindow):
         self._chat_params = self._get_chat_params()
         self._gpt = chat.Chat()
         self._chat_threads = []
+        self._excel_threads = []
 
         # references to stand-alone GPT prompt windows
         self._gpt_windows = []
@@ -195,6 +197,8 @@ class MainWindow(QMainWindow):
         self._a_save.triggered.connect(self.save_file)
         self._a_saveas = self._create_action("Save &As...", "Ctrl+Shift+s")
         self._a_saveas.triggered.connect(self.save_file_as)
+        self._a_casebook = self._create_action("Create E&xcel", "Ctrl+Shift+x")
+        self._a_casebook.triggered.connect(self.create_casebook)
         self._a_clear = self._create_action("&Clear Console", "Ctrl+Shift+c")
         self._a_clear.triggered.connect(self.console.clear)
         self._a_quit = self._create_action("&Quit", "Ctrl+q")
@@ -303,6 +307,7 @@ class MainWindow(QMainWindow):
         file_menu.addSeparator()
         file_menu.addAction(self._a_save)
         file_menu.addAction(self._a_saveas)
+        file_menu.addAction(self._a_casebook)
         file_menu.addSeparator()
         file_menu.addAction(self._a_clear)
         file_menu.addAction(self._a_quit)
@@ -450,10 +455,7 @@ class MainWindow(QMainWindow):
         def _on_completion_success():
             self.console.xappend("")
             tokens_used = self._gpt.token_count(self._chat_params.model)
-            self.console.xappend(
-                f">>> {tokens_used}/{chat._MAX_TOKENS}",
-                color=self._config.console_log_foreground,
-            )
+            self._console_log(f">>> {tokens_used}/{chat._MAX_TOKENS}")
             self.console.xappend("")
             self._set_gpt_enabled(True)
             thread.quit()
@@ -626,21 +628,21 @@ class MainWindow(QMainWindow):
                 tex_file.write(rendered)
 
             process = QProcess(self)
-            process.readyReadStandardOutput.connect(self._handle_process_output)
-            process.finished.connect(self._handle_process_finish)
+            process.readyReadStandardOutput.connect(self._handle_latex_output)
+            process.finished.connect(self._handle_latex_finish)
             process.setProcessChannelMode(QProcess.ProcessChannelMode.SeparateChannels)
             process.start("lualatex", ["-interaction=nonstopmode", tex_path])
 
         except Exception as e:
             self._handle_exc(e)
 
-    def _handle_process_output(self):
+    def _handle_latex_output(self):
         process = self.sender()
         output = process.readAllStandardOutput().data().decode()
         self.console.insertPlainText(output)
         self.console.ensureCursorVisible()
 
-    def _handle_process_finish(self, exit_code, exit_status):
+    def _handle_latex_finish(self, exit_code, exit_status):
         # re-enable UI
         self.run_button.setDisabled(False)
         self._a_runlatex.setDisabled(False)
@@ -660,9 +662,7 @@ class MainWindow(QMainWindow):
         self.console.xappend("Operation completed successfully.", weight=700)
         self.console.xappend("")
 
-        now = datetime.datetime.now()
-        timestamp = now.strftime("%y-%m-%d_%H%M%S")
-        basename = f"output_{timestamp}.pdf"
+        basename = f"output_{timestamp()}.pdf"
         # TODO may allow user to specify default output dir
         dest_path = os.path.join("output", basename)
         try:
@@ -675,6 +675,40 @@ class MainWindow(QMainWindow):
                 os.startfile(dest_path)
         except Exception as e:
             self._handle_exc(e)
+
+    def create_casebook(self):
+        cv, _ = txtparse.parse(self.editor.toPlainText())
+        basename = f"case_{timestamp()}.xlsx"
+        dest_path = os.path.join("output", basename)
+        thread = ExcelThread(cv=cv, filepath=dest_path)
+
+        try:
+            self._excel_threads.pop()
+        except IndexError:
+            pass
+        self._excel_threads.append(thread)
+
+        thread.started.connect(lambda: self._console_log("Creating Excel..."))
+        thread.progress.connect(self._console_log)
+
+        def _on_excel_success():
+            os.startfile(dest_path)
+            self._a_casebook.setEnabled(True)
+            thread.quit()
+            thread.deleteLater()
+
+        thread.completed.connect(_on_excel_success)
+
+        def _on_excel_error(e: Exception):
+            self._handle_exc(e)
+            self._a_casebook.setEnabled(True)
+            thread.quit()
+            thread.deleteLater()
+
+        thread.error.connect(_on_excel_error)
+
+        self._a_casebook.setDisabled(True)
+        thread.start()
 
     def _handle_exc(self, e: Exception, parent=None):
         self.console.xappend(
@@ -702,6 +736,9 @@ class MainWindow(QMainWindow):
 
     def _on_editor_change(self):
         self.setWindowModified(self.document.isModified())
+
+    def _console_log(self, text: str):
+        self.console.xappend(text, color=self._config.console_log_foreground)
 
     def new_file(self):
         self.editor.setPlainText(txtparse.MODEL_CV)
@@ -1701,6 +1738,93 @@ class ChatWaitThread(QThread):
             waittime += interval
 
 
+class ExcelThread(QThread):
+    progress = pyqtSignal(str)
+    completed = pyqtSignal()
+    error = pyqtSignal(Exception)
+
+    def __init__(self, cv: txtparse.CV, filepath: str, parent=None):
+        super().__init__(parent)
+        self.cv = cv
+        self.path = filepath
+
+        self._activity_translators = []
+        for i, act in enumerate(cv.activities):
+            role_translator = Translator(act.role, id=("role", i))
+            self._activity_translators.append(role_translator)
+            org_translator = Translator(act.org, id=("org", i))
+            self._activity_translators.append(org_translator)
+            descr_translator = Translator(" ".join(act.descriptions), id=("descr", i))
+            self._activity_translators.append(descr_translator)
+        for thread in self._activity_translators:
+            thread.result_ready.connect(self._handle_activity_result)
+            thread.error.connect(self.error.emit)
+
+        self._award_translators = []
+        for i, award in enumerate(cv.awards):
+            award_translator = Translator(award.name, id=i)
+            award_translator.result_ready.connect(self._handle_award_result)
+            award_translator.error.connect(self.error.emit)
+            self._award_translators.append(award_translator)
+
+        self._finished = []
+
+    def run(self):
+        # emite completed() if there is no runnable thread
+        self._check_completion()
+        for thread in self._activity_translators:
+            thread.start()
+        for thread in self._award_translators:
+            thread.start()
+
+    def _handle_activity_result(self, result: tuple):
+        text, (field, index) = result
+        act = self.cv.activities[index]
+        # `description` field calls for a list of strings
+        setattr(act, field, [text] if field == "descr" else text)
+        self._mark_finished(self.sender(), self._activity_translators)
+        self._check_completion()
+
+    def _handle_award_result(self, result: tuple):
+        text, index = result
+        self.cv.awards[index].name = text
+        self._mark_finished(self.sender(), self._award_translators)
+        self._check_completion()
+
+    def _mark_finished(self, thread: "Translator", thread_pool: list):
+        self.progress.emit(f"Translated: {thread.text}")
+        thread_pool.remove(thread)
+        self._finished.append(thread)
+
+    def _check_completion(self):
+        if self._activity_translators or self._award_translators:
+            return
+        wb = excel.create_casebook(self.cv)
+        wb.save(self.path)
+        self.completed.emit()
+
+
+class Translator(QThread):
+    result_ready = pyqtSignal(tuple)
+    error = pyqtSignal(Exception)
+
+    def __init__(self, text, id=None, parent=None):
+        super().__init__(parent)
+        self.text = text
+        self.id = id
+
+    def run(self):
+        gpt = chat.Chat()
+        prompt = f"Please translate the following text into Chinese.\n\n{self.text}"
+        try:
+            response = []
+            for chunk in gpt.send(prompt=prompt, model="gpt-3.5-turbo"):
+                response.append(chunk)
+            self.result_ready.emit(("".join(response), self.id))
+        except Exception as e:
+            self.error.emit(e)
+
+
 def show_message(*, parent=None, icon=None, **kwargs):
     msg_box = QMessageBox(parent=parent, **kwargs)
     msg_box.setWindowTitle(APP_TITLE)
@@ -1726,3 +1850,8 @@ def silent_remove(filepath):
 def json_dump(data, filepath: str, indent=4):
     with open(filepath, "w", encoding="utf-8") as f:
         json.dump(dataclasses.asdict(data), f, indent=indent)
+
+
+def timestamp() -> str:
+    now = datetime.datetime.now()
+    return now.strftime("%y-%m-%d_%H%M%S")

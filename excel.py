@@ -31,7 +31,7 @@ H2_STYLE.fill = PatternFill(fill_type="solid", start_color="C6D9F0", end_color="
 H2_STYLE.border = THIN_CASE
 
 
-def create_workbook(cv: txtparse.CV) -> Workbook:
+def create_casebook(cv: txtparse.CV) -> Workbook:
     wb = Workbook()
     ws = wb.active
 
@@ -183,7 +183,7 @@ def create_activities_block(ws, row, cv: txtparse.CV) -> int:
                 ws,
                 row=r,
                 column="E",
-                value=f"{act.role} | {act.org}",
+                value=f"{act.org + ' | ' if act.org else ''}{act.role}",
                 alignment=V_CENTERED,
             )
             write(
@@ -289,11 +289,11 @@ def _format_commitment(act: txtparse.Activity):
     if act.hours_per_week == "1":
         hpw = "1 hr/wk"
     else:
-        hpw = f"{act.hours_per_week} hrs/wk"
+        hpw = f"{act.hours_per_week or '?'} hrs/wk"
     if act.weeks_per_year == "1":
         wpy = "1 wk/yr"
     else:
-        wpy = f"{act.weeks_per_year} wks/yr"
+        wpy = f"{act.weeks_per_year or '?'} wks/yr"
     return f"{hpw}\n{wpy}"
 
 
@@ -301,5 +301,5 @@ if __name__ == "__main__":
     with open("tests/test_case.txt", encoding="utf-8") as f:
         src = f.read()
     test_cv, _ = txtparse.parse(src)
-    wb = create_workbook(test_cv)
+    wb = create_casebook(test_cv)
     wb.save(os.path.join("tests", "test_case.xlsx"))
