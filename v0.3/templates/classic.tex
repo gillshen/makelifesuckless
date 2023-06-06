@@ -1,0 +1,241 @@
+\documentclass[<< settings.paper >>, << settings.font_size_in_point >>pt]{article}
+
+\usepackage{xkeyval}
+\usepackage{etoolbox}  % provides string testing
+\usepackage{microtype}
+\usepackage{enumitem}
+\usepackage{fontspec}
+\usepackage{titlesec}
+\usepackage{calc} % for calculating remaining length
+\usepackage{xcolor}
+\usepackage[colorlinks=<< 'true' if settings.color_links else 'false' >>, urlcolor=<< settings.url_color >>]{hyperref}
+
+\usepackage[skip=<< settings.paragraph_skip_in_pt >>pt plus 0pt]{parskip}
+\usepackage[%
+    top=<< settings.top_margin_in_inch >>in,
+    bottom=<< settings.bottom_margin_in_inch >>in,
+    left=<< settings.left_margin_in_inch >>in,
+    right=<< settings.right_margin_in_inch >>in
+]{geometry}
+
+\pagestyle{<< "plain" if settings.show_page_numbers else "empty" >>}
+\linespread{<< settings.line_spread >>}
+\raggedbottom
+
+<! set var_proportional = 'Proportional' if settings.proportional_numbers else 'Monospaced' -!>
+<! set var_oldstyle = 'OldStyle' if settings.old_style_numbers else 'Lining' -!>
+<!- if settings.main_font !>
+\setmainfont{<< settings.main_font >>}[Numbers={<< var_proportional >>, << var_oldstyle >>}]
+<! endif !>
+\titleformat{\section}[hang]{}{}{0pt}{}
+\titlespacing{\section}{0pt}{<< settings.before_sectitle_skip_in_pt >>pt}{<< settings.after_sectitle_skip_in_pt >>pt}
+<! if settings.url_font_follows_text !>\urlstyle{rm}<! endif !>
+
+\newcommand{\headingstyle}[1]{%
+<!- if settings.heading_font !>
+    \setmainfont{<< settings.heading_font >>}[%
+        LetterSpace=<< '4.0' if settings.all_cap_headings else '2.0' >>,
+        Numbers={<< var_proportional >>, << var_oldstyle >>}
+    ]%
+<!- endif !>
+    \<< settings.heading_relative_size >>
+    <!- if settings.bold_headings !>\bfseries<! endif !>
+    <!- if settings.all_cap_headings !>\uppercase{#1}<! else !>#1<! endif !>
+}
+
+\newlength{\remaining}
+\newcommand{\sectionstyle}[1]{%
+    \setlength{\remaining}{\textwidth - \widthof{\headingstyle{#1}}}%
+    \underline{\headingstyle{#1}\hspace{\remaining}}%
+}
+
+\let\oldsection\section
+\renewcommand{\section}[1]{\oldsection[#1]{\sectionstyle{#1}}}
+
+\newlength{\postentryskip}
+\setlength{\postentryskip}{<< settings.entry_skip_in_pt >>pt plus 1pt minus 1pt}
+
+\newcommand{\contactdivide}{%
+    \hspace{.5em minus .2em}%
+        \textcolor{lightgray}{<< settings.contact_divider|to_latex >>}%
+    \hspace{.5em minus .2em}%
+}
+
+\setlist[itemize]{%
+    label={<< settings.bullet_text|to_latex >>},
+    leftmargin=*,
+    align=left,
+    labelindent=<< settings.bullet_indent_in_em >>em,
+    labelsep=<< settings.bullet_item_sep_in_em >>em
+}
+
+\makeatletter
+
+\def\ifnotempty#1#2#3{\def\temp{}\ifx#1\temp#3\else#2\fi}
+\def\hideifempty#1#2{\def\temp{}\ifx#1\temp\else#2\fi}
+
+\define@key{edukeys}{loc}{\def\edu@loc{#1}}
+\define@key{edukeys}{date}{\def\edu@date{#1}}
+\define@key{edukeys}{degree}{\def\edu@degree{#1}}
+\define@key{edukeys}{major}{\def\edu@major{#1}}
+\define@key{edukeys}{minor}{\def\edu@minor{#1}}
+\define@key{edukeys}{gpa}{\def\edu@gpa{#1}}
+\define@key{edukeys}{rank}{\def\edu@rank{#1}}
+\define@key{edukeys}{courses}{\def\edu@courses{#1}}
+
+\newcommand{\edu}[2]{%
+    \begingroup%
+    \setkeys{edukeys}{loc=, date=, degree=, major=, minor=, gpa=, rank=, courses=, #2}%
+    \def\gparank{%
+        \ifnotempty{\edu@gpa}{%
+            \edu@gpa%
+            \hideifempty{\edu@rank}{; }\edu@rank%
+        }{%
+            \edu@rank%
+        }%
+    }
+    \newif\ifgparankshown
+    \newif\ifcoursesshown
+    % first row: school ... ifnull(loc, date)
+    \textbf{#1}%
+    \hfill%
+    \ifnotempty{\edu@loc}{\edu@loc}{\edu@date}\par
+    % second row
+    \ifnotempty{\edu@degree}{%
+        % if degree is not empty: degree[; major][; minor]
+        \edu@degree%
+        \hideifempty{\edu@major}{; }\edu@major%
+        \hideifempty{\edu@minor}{; }\edu@minor%
+    }{%
+        % if degree is empty
+        \gparankshowntrue%
+        \ifnotempty{\edu@major}{%
+            % if major is not empty: major[; minor][; gpa][; rank]
+            \edu@major%
+            \hideifempty{\edu@minor}{; }\edu@minor%
+            \hideifempty{\edu@gpa\edu@rank}{; }\gparank%
+        }{%
+            % if major is empty
+            \ifnotempty{\edu@minor}{%
+                % if minor is not empty: minor[; gpa][; rank]
+                \edu@minor%
+                \hideifempty{\edu@gpa\edu@rank}{; }\gparank%
+            }{%
+                % if minor is empty
+                \ifnotempty{\edu@gpa\edu@rank}{%
+                    % if either gpa or rank is not empty
+                    \gparank%
+                }{%
+                    % if both gpa and rank are empty
+                    \coursesshowntrue%
+                    \edu@courses%
+                }%
+            }%
+        }%
+    }%
+    \hfill
+    \ifnotempty{\edu@loc}{\edu@date}{}\par
+    % show gpa and rank if not already
+    \ifgparankshown\else\gparank\par\fi
+    % show courses if not already
+    \ifcoursesshown\else\edu@courses\par\fi
+    \endgroup\addvspace{\postentryskip}
+}
+
+\define@key{activitykeys}{role}{\def\activity@role{#1}}
+\define@key{activitykeys}{org}{\def\activity@org{#1}}
+\define@key{activitykeys}{loc}{\def\activity@loc{#1}}
+\define@key{activitykeys}{date}{\def\activity@date{#1}}
+\define@key{activitykeys}{commitment}{\def\activity@commitment{#1}}
+
+\newenvironment{activity}[1]{%
+    \begingroup%
+    \setkeys{activitykeys}{org=, loc=, date=, commitment=, #1}%
+    \textbf{\emph{\activity@role}\ifx\activity@org\empty\else{, \activity@org}\fi}%
+    <! if settings.show_activity_locations !>\hfill\activity@loc<! endif !>\par
+    \activity@date%
+    <! if settings.show_time_commitments !>\hfill\activity@commitment<! endif !>\par
+    \endgroup
+    \begin{itemize}[nosep]
+}{%
+    \end{itemize}\par\addvspace{\postentryskip}
+}
+\makeatother
+
+\begin{document}
+
+<! if cv.name -!>
+\begin{center}
+<!- if settings.title_font !>
+    \setmainfont{<< settings.title_font >>}[Numbers={<< var_proportional >>, << var_oldstyle >>}]%
+<!- endif !>
+    \<< settings.title_relative_size >>\bfseries%
+    << cv.name|to_latex >>
+\end{center}
+\addvspace{\postentryskip}
+<!- endif !>
+
+<! if cv.email or cv.phone or cv.address or cv.website -!>
+<! set website = '\\url{' + cv.website + '}' if cv.website else '' !>
+\begin{center}
+<! for item in [cv.email, cv.phone, cv.address, website] if item -!>
+<! if loop.index0 !>\contactdivide <! endif !><< item|to_latex >>
+<!- endfor !>
+\end{center}
+<!- endif !>
+
+<! if cv.education or cv.tests -!>
+\section{<< 'Education' if cv.education else 'Tests' >>}
+<! for edu in cv.education !>
+\edu{<< edu.school|to_latex >>}{%
+    loc={<< edu.loc|to_latex >>},
+    date={<< edu.start_date|format_date(settings.date_style, edu.end_date) >>},
+    degree={<< edu.degree|to_latex >>},
+    major={<< edu.major|to_latex|null_or_prefixed("Major: ") >>},
+    minor={<< edu.minor|to_latex|null_or_prefixed("Minor: ") >>},
+    gpa={<< edu.gpa|to_latex|null_or_prefixed("GPA: ") >>},
+    rank={<< edu.rank|to_latex|null_or_prefixed("Rank: ") >>},
+    courses={<< edu.courses|to_latex|null_or_prefixed("Courses: ") >>}
+}
+<!- endfor !>
+<! for test in cv.tests !>
+\textbf{<< test.name|to_latex >>}: << test.score|to_latex >><! if test.date !> (<< test.date|format_date(settings.date_style) >>)<! endif !>
+<! endfor !>
+<!- endif !>
+
+<! if cv.awards -!>
+\section{<< settings.awards_section_title|to_latex >>}
+<! for award in cv.awards !>
+{<! if settings.bold_award_names !>\bfseries <! endif !><< award.name|to_latex >>}, << award.date|format_date(settings.date_style) >>
+<! endfor !>
+<!- endif !>
+
+<! if cv.skillsets -!>
+\section{<< settings.skills_section_title|to_latex >>}
+<! for skillset in cv.skillsets !>
+<! if skillset.name !>{<! if settings.bold_skillset_names !>\bfseries <! endif !><< skillset.name|to_latex >>}: <! endif !><< skillset.skills|to_latex >>
+<! endfor !>
+<!- endif !>
+
+<! set sections = cv.activity_sections or [""] -!>
+<! for section in sections !>
+<! set activities = cv.activities_of_section(section) -!>
+<! if activities -!>
+\section{<< section or settings.default_activities_section_title|to_latex >>}
+
+<! for activity in activities !>
+\begin{activity}{%
+    role={<< activity.role|to_latex >>},
+    org={<< activity.org|to_latex >>},
+    loc={<< activity.loc|to_latex >>},
+    date={<< activity.start_date|format_date(settings.date_style, activity.end_date) >>},
+    commitment={<< activity.hours_per_week|format_commitment(activity.weeks_per_year) >>}
+}
+<! for descr in activity.descriptions -!>
+    \item\relax << descr|to_latex|handle_ending_period(settings.ending_period_policy) >>
+<! endfor -!>
+\end{activity}
+<! endfor !>
+<! endif !>
+<! endfor !>
+\end{document}
