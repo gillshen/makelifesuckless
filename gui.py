@@ -1754,7 +1754,9 @@ class ExcelThread(QThread):
             self._activity_translators.append(role_translator)
             org_translator = Translator(act.org, id=("org", i))
             self._activity_translators.append(org_translator)
-            descr_translator = Translator(" ".join(act.descriptions), id=("descr", i))
+            descr_translator = Translator(
+                " ".join(act.descriptions), id=("descriptions", i)
+            )
             self._activity_translators.append(descr_translator)
         for thread in self._activity_translators:
             thread.result_ready.connect(self._handle_activity_result)
@@ -1781,7 +1783,7 @@ class ExcelThread(QThread):
         text, (field, index) = result
         act = self.cv.activities[index]
         # `description` field calls for a list of strings
-        setattr(act, field, [text] if field == "descr" else text)
+        setattr(act, field, [text] if field == "descriptions" else text)
         self._mark_finished(self.sender(), self._activity_translators)
         self._check_completion()
 
@@ -1815,10 +1817,14 @@ class Translator(QThread):
 
     def run(self):
         gpt = chat.Chat()
-        prompt = f"Please translate the following text into Chinese.\n\n{self.text}"
+        prompt = f"Please translate the following text into Chinese:\n\n{self.text}"
         try:
             response = []
-            for chunk in gpt.send(prompt=prompt, model="gpt-3.5-turbo"):
+            for chunk in gpt.send(
+                prompt=prompt,
+                keep_context=False,
+                model="gpt-3.5-turbo",
+            ):
                 response.append(chunk)
             self.result_ready.emit(("".join(response), self.id))
         except Exception as e:

@@ -1,4 +1,4 @@
-name: Guido van Rossum
+name: Fictional Character Guido
 email: guido@python.org
 website: https://gvanrossum.github.io/
 phone: (123) 456-7890
@@ -10,6 +10,7 @@ start date: 1981-09
 end date: 1982
 gpa: \textsc{unknown}
 rank: 1/42
+courses: AP Spam (5), AP Egg (5), AP Silly Walk (5)
 
 school: University of Amsterdam
 loc: Amsterdam, The Netherlands
@@ -23,6 +24,15 @@ start date: 1965-01-01
 end date: 1965-01-02
 rank: kick-ass
 
+Test: SAT
+Score: xxxx
+Test Date: 2023-06
+
+Test: TOEFL
+Score: xxx (L/S/R/W)
+Test Date: 2023-06 
+
+
 # Work Experience
 
 role: Distinguished Engineer
@@ -30,8 +40,8 @@ org: Microsoft, Inc.
 loc: San Francisco, California
 start date: 2020-11-12
 end date: Present
-- Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Ut purus elit, vestibulum ut, placerat ac, adipiscing vitae, felis. Curabitur dictum gravida mauris.
-- Donec vehicula augue eu neque. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas.
+- Leads the development of the company's Python strategy and roadmap, ensuring that Microsoft remains competitive in the rapidly growing Python ecosystem.
+- Collaborates with various teams across the company to drive the adoption and innovation of Python-related technologies, including machine learning, data science, and Azure cloud services.
 
 role: Senior Staff Software Engineer
 org: Google LLC
