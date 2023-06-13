@@ -172,6 +172,7 @@ output.*
 tests/test_*.*
 config/last_used.json
 chat_params/last_used.json
+chat_history
 settings/last_used.json
 v*/settings/last_used.json
 v*/config

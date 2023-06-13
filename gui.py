@@ -4,6 +4,7 @@ import dataclasses
 import json
 import time
 import datetime
+import csv
 
 from PyQt6.QtCore import Qt, QProcess, QThread, pyqtSignal
 from PyQt6.QtGui import (
@@ -117,9 +118,13 @@ class MainWindow(QMainWindow):
 
         # chat completion parameters
         self._chat_params = self._get_chat_params()
+
+        # chat helpers
         self._gpt = chat.Chat()
         self._chat_threads = []
         self._excel_threads = []
+        self._chat_history = None  # holds a file object after chat starts
+        self._csv_writer = None  # holds a csv.writer() after chat starts
 
         # references to stand-alone GPT prompt windows
         self._gpt_windows = []
@@ -422,6 +427,7 @@ class MainWindow(QMainWindow):
     def _exec_prompt(self, prompt_head: str, parent=None):
         prompt_tail = self.editor.get_selected()
         prompt = f"{prompt_head}\n\n{prompt_tail}".strip()
+        promt_timestamp = timestamp()
 
         if not prompt:
             show_error(parent=parent or self, text="The prompt must not be empty.")
@@ -459,6 +465,10 @@ class MainWindow(QMainWindow):
             self.console.xappend("")
             self._set_gpt_enabled(True)
             thread.quit()
+            # save the prompt and the completion
+            self._csv_writer.writerow([promt_timestamp, "user", prompt])
+            completion = self._gpt.messages[-1]["content"]
+            self._csv_writer.writerow([timestamp(), "assistant", completion])
 
         thread.finished.connect(_on_completion_success)
 
@@ -475,6 +485,15 @@ class MainWindow(QMainWindow):
         self.console.xappend("")
         self.console.xappend(f">>> {self._chat_params.model}", weight=700)
         self.console.xappend("")
+
+        if not os.path.isdir("chat_history"):
+            os.mkdir("chat_history")
+        if self._chat_history is None:
+            csv_path = os.path.join("chat_history", f"chat_{timestamp()}.csv")
+            self._chat_history = open(csv_path, mode="w", newline="")
+            self._csv_writer = csv.writer(self._chat_history)
+            self._csv_writer.writerow([timestamp(), "system", self._gpt.system_message])
+
         thread.start()
 
     def _stream_completion(self, content: str):
@@ -576,6 +595,9 @@ class MainWindow(QMainWindow):
             if msg_box.exec() == _.No:
                 event.ignore()
         else:
+            # Close chat history
+            self._chat_history.close()
+
             # Save current GPT parameters
             # json_dump(self._chat_params, filepath=LAST_USED_CHAT_PARAMS)
             # Save current LaTeX settings
@@ -1823,7 +1845,11 @@ class Translator(QThread):
 
     def run(self):
         gpt = chat.Chat()
-        prompt = f"Please translate the following text into Chinese:\n\n{self.text}"
+        prompt = (
+            f"Please remove Markdown formatting from the following text "
+            f"and then translate it into Chinese. "
+            f"Reply with the translated text only.\n\n{self.text}"
+        )
         try:
             response = []
             for chunk in gpt.send(
