@@ -2,6 +2,7 @@ import dataclasses
 import json
 import re
 import typing
+import argparse
 
 import openai
 import tiktoken
@@ -105,7 +106,11 @@ class Chat:
             if kwargs.get("stream"):
                 response_chunks = []
                 for chunk in openai.ChatCompletion.create(**kwargs):
-                    content = chunk["choices"][0]["delta"]["content"]
+                    try:
+                        content = chunk["choices"][0]["delta"]["content"]
+                    except KeyError:
+                        # sometimes `delta` is missing `content`
+                        continue
                     response_chunks.append(content)
                     yield content
                 completion = "".join(response_chunks)
@@ -163,8 +168,16 @@ def percentile(data: typing.Iterable, q: int):
     return sorted_data[k]
 
 
-def _test():
+def _test(args: argparse.Namespace):
+    print(args)
     chat = Chat()
+    if args.system_message:
+        chat.system_message = args.system_message
+    kwargs = dict(model=args.model, stream=args.stream)
+    if args.temperature is not None:
+        kwargs["temperature"] = args.temperature
+    if args.top_p is not None:
+        kwargs["top_p"] = args.top_p
     while True:
         try:
             prompt = input("\n> ")
@@ -176,15 +189,26 @@ def _test():
             print(">>> chat has been reset")
             continue
         print(">>>")
-        for content in chat.send(
-            prompt,
-            keep_context=True,
-            model="gpt-3.5-turbo",
-            stream=True,
-        ):
+        for content in chat.send(prompt, keep_context=args.context, **kwargs):
             print(content, end="")
         print()
 
 
+_argparser = argparse.ArgumentParser(prog="Chat")
+_argparser.add_argument("--model", default="gpt-3.5-turbo")
+_argparser.add_argument("--system-message")
+_argparser.add_argument("--temperature", type=float)
+_argparser.add_argument("--top-p", type=float)
+_argparser.add_argument(
+    "--context",
+    default=True,
+    action=argparse.BooleanOptionalAction,
+)
+_argparser.add_argument(
+    "--stream",
+    default=True,
+    action=argparse.BooleanOptionalAction,
+)
+
 if __name__ == "__main__":
-    _test()
+    _test(args=_argparser.parse_args())
