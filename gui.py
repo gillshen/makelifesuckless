@@ -123,8 +123,7 @@ class MainWindow(QMainWindow):
         self._gpt = chat.Chat()
         self._chat_threads = []
         self._excel_threads = []
-        self._chat_history = None  # holds a file object after chat starts
-        self._csv_writer = None  # holds a csv.writer() after chat starts
+        self._chat_history = None  # holds the path to the chat history file
 
         # references to stand-alone GPT prompt windows
         self._gpt_windows = []
@@ -464,11 +463,17 @@ class MainWindow(QMainWindow):
             self._console_log(f">>> {tokens_used}/{chat._MAX_TOKENS}")
             self.console.xappend("")
             self._set_gpt_enabled(True)
-            thread.quit()
             # save the prompt and the completion
-            self._csv_writer.writerow([promt_timestamp, "user", prompt])
-            completion = self._gpt.messages[-1]["content"]
-            self._csv_writer.writerow([timestamp(), "assistant", completion])
+            try:
+                completion = self._gpt.messages[-1]["content"]
+                self.write_chat_history(
+                    (promt_timestamp, "user", prompt),
+                    (timestamp(), "assistant", completion),
+                )
+            except Exception as e:
+                self._handle_exc(e)
+            finally:
+                thread.quit()
 
         thread.finished.connect(_on_completion_success)
 
@@ -489,10 +494,8 @@ class MainWindow(QMainWindow):
         if not os.path.isdir("chat_history"):
             os.mkdir("chat_history")
         if self._chat_history is None:
-            csv_path = os.path.join("chat_history", f"chat_{timestamp()}.csv")
-            self._chat_history = open(csv_path, mode="w", newline="")
-            self._csv_writer = csv.writer(self._chat_history)
-            self._csv_writer.writerow([timestamp(), "system", self._gpt.system_message])
+            self._chat_history = os.path.join("chat_history", f"chat_{timestamp()}.csv")
+            self.write_chat_history((timestamp(), "system", self._gpt.system_message))
 
         thread.start()
 
@@ -504,6 +507,12 @@ class MainWindow(QMainWindow):
         self._gpt_menu.setEnabled(enabled)
         for w in self._gpt_windows:
             w.send_button.setEnabled(enabled)
+
+    def write_chat_history(self, *rows):
+        with open(self._chat_history, mode="a", newline="", encoding="utf-8") as f:
+            csv_writer = csv.writer(f)
+            for row in rows:
+                csv_writer.writerow(row)
 
     def _update_ui_with_config(self):
         # editor font and line wrap
@@ -595,9 +604,6 @@ class MainWindow(QMainWindow):
             if msg_box.exec() == _.No:
                 event.ignore()
         else:
-            # Close chat history
-            self._chat_history.close()
-
             # Save current GPT parameters
             # json_dump(self._chat_params, filepath=LAST_USED_CHAT_PARAMS)
             # Save current LaTeX settings
@@ -1755,7 +1761,7 @@ class ChatWaitThread(QThread):
         waittime = 0
         interval = 0.5
         while True:
-            if waittime > 20:
+            if waittime > 40:
                 return
             self.waiting.emit()
             time.sleep(interval)
