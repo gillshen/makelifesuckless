@@ -790,7 +790,7 @@ class MainWindow(QMainWindow):
     def _open_file(self, filepath: str):
         try:
             _, ext = os.path.splitext(filepath)
-            if ext in [".docx", ".doc"]:
+            if ext.lower() in [".docx", ".doc"]:
                 text = docparse.parse(filepath)
             else:
                 text = open(filepath, encoding="utf-8").read()
@@ -827,16 +827,21 @@ class MainWindow(QMainWindow):
         if not self._filepath:
             self.save_file_as()
             return
+        base, ext = os.path.splitext(self._filepath)
+        if ext.lower() in [".docx", ".doc"]:
+            self.save_file_as(default_filename=f"{base}.txt")
+            return
         try:
             self._save_file(self._filepath)
         except Exception as e:
             self._handle_exc(e)
 
-    def save_file_as(self):
+    def save_file_as(self, *, default_filename=""):
+        default_path = os.path.join(self._config.default_save_dir, default_filename)
         filepath, _ = QFileDialog.getSaveFileName(
             self,
             caption="Save File",
-            directory=self._config.default_save_dir,
+            directory=default_path,
             filter="TXT Files (*.txt)",
         )
         if not filepath:
@@ -1854,10 +1859,13 @@ class Translator(QThread):
         self.id = id
 
     def run(self):
-        gpt = chat.Chat()
+        if not self.text:
+            self.result_ready.emit(("", self.id))
+            return
+        gpt = chat.Chat(system_message="You are a translator of student resumes.")
         prompt = (
-            f"Please remove Markdown formatting from the following text "
-            f"and then translate it into Chinese. "
+            f"Please translate the resume fragment below into Chinese. "
+            f"If it contains Markdown formatting, remove the formatting. "
             f"Reply with the translated text only.\n\n{self.text}"
         )
         try:
