@@ -11,6 +11,8 @@ def parse(path: str) -> str:
 
 def _process_para(para: Paragraph):
     results = []
+    if para.style.name == "List Paragraph":
+        results.append("- ")
     for run in _get_runs(para):
         if run.bold and run.italic:
             text = f"***{run.text}***"
