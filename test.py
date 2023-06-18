@@ -1,23 +1,32 @@
 import os
 import subprocess
 
-from txtparse import parse
+import txtparse
+import docparse
 from tex import Settings, render
 
 
 TXT_PATH = "tests/sample1.txt"
+DOC_PATH = "tests/sample2.docx"
 TEX_PATH = "output.tex"
 TEMPLATE_PATH = "templates/classic.tex"
 
 
-def test_parse():
+def test_txt_parse():
     with open(TXT_PATH, encoding="utf-8") as f:
-        cv, unparsed = parse(f.read())
+        cv, unparsed = txtparse.parse(f.read())
+    _print_parsed(cv, unparsed)
 
+
+def test_doc_parse():
+    cv, unparsed = txtparse.parse(docparse.parse(DOC_PATH))
+    _print_parsed(cv, unparsed)
+
+
+def _print_parsed(cv: txtparse.CV, unparsed: list):
     print(cv.to_json())
     print(f"Unparsed lines: {len(unparsed)}")
-    for line in unparsed:
-        print(line)
+    print(*unparsed, sep="\n")
 
 
 TEST_SETTINGS = Settings(
@@ -48,7 +57,7 @@ def test_json_read_write():
 
 def test_render():
     with open(TXT_PATH, encoding="utf-8") as f:
-        cv, _ = parse(f.read())
+        cv, _ = txtparse.parse(f.read())
     with open(TEX_PATH, "w", encoding="utf-8") as f:
         f.write(render(template_path=TEMPLATE_PATH, settings=TEST_SETTINGS, cv=cv))
     run_lualatex(TEX_PATH, dest_path="output.pdf")
@@ -86,6 +95,7 @@ def run_lualatex(
 
 
 if __name__ == "__main__":
-    # test_parse()
+    test_txt_parse()
+    test_doc_parse()
     test_json_read_write()
     test_render()

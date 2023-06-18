@@ -42,6 +42,7 @@ from PyQt6.QtWidgets import (
 )
 
 import txtparse
+import docparse
 import tex
 import chat
 import excel
@@ -788,8 +789,11 @@ class MainWindow(QMainWindow):
 
     def _open_file(self, filepath: str):
         try:
-            with open(filepath, encoding="utf-8") as f:
-                text = f.read()
+            _, ext = os.path.splitext(filepath)
+            if ext in [".docx", ".doc"]:
+                text = docparse.parse(filepath)
+            else:
+                text = open(filepath, encoding="utf-8").read()
         except Exception as e:
             self._handle_exc(e)
         else:
@@ -804,7 +808,7 @@ class MainWindow(QMainWindow):
             self,
             caption="Open File",
             directory=self._config.default_open_dir,
-            filter="TXT Files (*.txt)",
+            filter="Text or Word Files (*.txt *.docx *.doc)",
         )
         if filepath:
             # update config
