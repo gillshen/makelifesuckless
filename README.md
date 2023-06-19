@@ -20,12 +20,13 @@ LaTeX-based cv typesetting tool
 
 ### v0.4
 
-- 可读取Word文档
+- 可直接读取Word文档
 - 自动保存ChatGPT对话记录
 
 ### v0.3
 
 - 自动生成案例梳理Excel（须使用ChatGPT）
+- 自动赋予PDF独特文件名
 
 ### v0.2
 
@@ -243,12 +244,6 @@ role: zzz
 <img src="https://github.com/gillshen/makelifesuckless/assets/100059605/cc2023b5-cfa5-41ba-949d-7f2faeb9c2fe" width=804>
 
 大概是因为选了一个非TrueType字体。首次使用时Windows默认的字体MS Sans Serif就会导致这个错误。解决方法：检查三个字体选择，确保每个都是TrueType.
-
-### "Sorry, something went wrong", console显示"no output PDF file produced"
-
-<img src="https://github.com/gillshen/makelifesuckless/assets/100059605/a44f9f38-8149-4cec-b3c2-d2334add14d0" width=804>
-
-大概是因为之前编译成功并打开了`output.pdf`, 某些PDF浏览器（比如Adobe Reader）会锁住打开的文件，导致覆盖失败。解决方法：把PDF关了再编译。
 
 ### SSL错误导致API请求无法送达
 
