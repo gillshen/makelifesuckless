@@ -12,7 +12,7 @@ MAX_TOKENS = 4097
 try:
     with open("chat_settings.json", encoding="utf-8") as f:
         chat_settings = json.load(f)
-    openai.api_key = chat_settings["key"]
+    openai.api_key = chat_settings.get("key", "")
     if "base" in chat_settings:
         openai.api_base = chat_settings["base"]
     if "max_tokens" in chat_settings:

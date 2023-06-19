@@ -116,6 +116,8 @@ class MainWindow(QMainWindow):
 
         # chat completion parameters
         self._chat_params = chat.Params()
+        self._params_window = ParamsDialog()
+        self._decorate_params_dialog()
 
         # chat helpers
         self._gpt = chat.Chat()
@@ -124,7 +126,10 @@ class MainWindow(QMainWindow):
         self._chat_history = None  # holds the path to the chat history file
 
         # references to stand-alone GPT prompt windows
-        self._gpt_windows = []
+        self._prompt_window = GptWindow()
+        self._prompt_window.setWindowTitle("Enter Your Prompt")
+        self._prompt_window.resize(400, 320)
+        self._prompt_window.send_action.triggered.connect(self._send_prompt)
 
         # path to the last opened file
         self._filepath = ""
@@ -250,11 +255,11 @@ class MainWindow(QMainWindow):
 
         # Chat options
         self._a_enterprompt = self._create_action("&Enter Prompt...", "Ctrl+e")
-        self._a_enterprompt.triggered.connect(self.open_prompt_window)
+        self._a_enterprompt.triggered.connect(self._show_prompt_window)
         self._a_reset_chat = self._create_action("&Reset Context", "Ctrl+Shift+r")
         self._a_reset_chat.triggered.connect(self.reset_chat_context)
         self._a_paramsdialog = self._create_action("&Parameters...", "Ctrl+p")
-        self._a_paramsdialog.triggered.connect(self.open_params_dialog)
+        self._a_paramsdialog.triggered.connect(self._params_window.exec)
 
         self._gpt_actions = self._create_gpt_actions()
 
@@ -406,12 +411,14 @@ class MainWindow(QMainWindow):
     def _create_gpt_menu(self) -> QMenu:
         menu = QMenu("&ChatGPT", self)
         for i, action in enumerate(self._gpt_actions):
-            # separate user-defined actions from built-in ones
-            if i and action is self._a_enterprompt:
+            # add a separator just above each of the listed actions
+            if i and action in [self._a_enterprompt, self._a_paramsdialog]:
                 menu.addSeparator()
             menu.addAction(action)
+        # if the chat module fails to find an appropriate settings file
         if not chat.openai.api_key:
-            menu.setDisabled(True)
+            for action in menu.actions():
+                action.setDisabled(True)
         return menu
 
     def _exec_prompt(self, prompt_head: str, parent=None):
@@ -496,8 +503,7 @@ class MainWindow(QMainWindow):
 
     def _set_gpt_enabled(self, enabled: bool = True):
         self._gpt_menu.setEnabled(enabled)
-        for w in self._gpt_windows:
-            w.send_button.setEnabled(enabled)
+        self._prompt_window.send_button.setEnabled(enabled)
 
     def write_chat_history(self, *rows):
         with open(self._chat_history, mode="a", newline="", encoding="utf-8") as f:
@@ -594,12 +600,14 @@ class MainWindow(QMainWindow):
             msg_box.setDefaultButton(_.Yes)
             if msg_box.exec() == _.No:
                 event.ignore()
+
         else:
             # Save current LaTeX settings
             settings = self.settings_frame.get_settings()
             if not os.path.isdir(SETTINGS_DIR):
                 os.mkdir(SETTINGS_DIR)
             json_dump(settings, filepath=LAST_USED_SETTINGS)
+
             # Save current config; with update window geometry too
             window_rect = self.geometry()
             self._config.window_x = window_rect.x()
@@ -609,9 +617,9 @@ class MainWindow(QMainWindow):
             if not os.path.isdir(CONFIG_DIR):
                 os.mkdir(CONFIG_DIR)
             json_dump(self._config, filepath=LAST_USED_CONFIG)
-            # Close GPT windows if any
-            for w in self._gpt_windows:
-                w.close()
+
+            # Close the prompt window if open
+            self._prompt_window.close()
             event.accept()
 
     def show_parse_tree(self):
@@ -921,37 +929,31 @@ class MainWindow(QMainWindow):
         w.ok_button.clicked.connect(_update_config)
         w.exec()
 
-    def open_params_dialog(self):
-        w = ParamsDialog()
-        w.setWindowTitle("Chat Completion Parameters")
-        w.setGeometry(self._config.window_x + 40, self._config.window_y + 40, 480, 600)
-        w.load_params(self._chat_params)
+    def _decorate_params_dialog(self):
+        self._params_window.setWindowTitle("Chat Completion Parameters")
+        self._params_window.setGeometry(
+            self._config.window_x + 40, self._config.window_y + 40, 480, 600
+        )
+        self._params_window.load_params(self._chat_params)
+        self._params_window.ok_button.clicked.connect(self._update_chat_params)
 
-        def _update_params():
-            try:
-                self._chat_params = w.get_params()
-            except Exception as e:
-                self._handle_exc(e)
-            finally:
-                w.close()
+    def _update_chat_params(self):
+        try:
+            self._chat_params = self._params_window.get_params()
+        except Exception as e:
+            self._handle_exc(e)
+        finally:
+            self._params_window.close()
 
-        w.ok_button.clicked.connect(_update_params)
-        w.exec()
+    def _show_prompt_window(self):
+        self._prompt_window.show()
+        self._prompt_window.raise_()
 
-    def open_prompt_window(self):
-        w = GptWindow()
-        w.setWindowTitle("Enter Your Prompt")
-        w.resize(400, 320)
-
-        def _run():
-            self.raise_()
-            w.raise_()
-            prompt_head = w.get_prompt()
-            self._exec_prompt(prompt_head, parent=w)
-
-        w.send_action.triggered.connect(_run)
-        self._gpt_windows.append(w)
-        w.show()
+    def _send_prompt(self):
+        self.raise_()
+        self._prompt_window.raise_()
+        prompt_head = self._prompt_window.get_prompt()
+        self._exec_prompt(prompt_head, parent=self._prompt_window)
 
     def reset_chat_context(self):
         self._gpt.reset_messages()
