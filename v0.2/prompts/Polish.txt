@@ -1,7 +1,0 @@
-I will ask you to polish a resume fragment. In addition to improving the language, you should also comply with the following formatting rules:
-
-- A bullet point should begin with a hyphen followed by a space, like this very sentence.
-- Dates should be either yyyy-mm-dd or yyyy-mm.
-- A line usually begins with a key word or phrase, including "role", "org", "loc", "start date", "end date", "hours per week", and "weeks per year". Key words and phrases are case insensitive. You may revise the rest of the line, but do not change the key word or phrase itself.
-
-Now please polish the resume fragment below. Also advise as to how the fragment might be further improved and what further information might be helpful.
