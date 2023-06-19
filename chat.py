@@ -86,11 +86,10 @@ class Chat:
         if not keep_context:
             self.reset_messages()
 
-        model = kwargs["model"]
-
         # If the number of tokens in the system and assistant messages plus
         # the next interction (as calculated by `context_pair_length()`) will
         # exceed the token limit, remove the earliest 2 assistant messages.
+        model = kwargs["model"]
         while (
             self.token_count(model)
             + self.context_pair_length(model, q=self.reserve_level)

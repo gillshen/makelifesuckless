@@ -53,9 +53,6 @@ APP_TITLE = "Curriculum Victim"
 SETTINGS_DIR = "settings"
 LAST_USED_SETTINGS = f"{SETTINGS_DIR}/last_used.json"
 
-CHAT_PARAMS_DIR = "chat_params"
-LAST_USED_CHAT_PARAMS = f"{CHAT_PARAMS_DIR}/last_used.json"
-
 CONFIG_DIR = "config"
 LAST_USED_CONFIG = f"{CONFIG_DIR}/last_used.json"
 
@@ -118,7 +115,7 @@ class MainWindow(QMainWindow):
         self._config = self._get_config()
 
         # chat completion parameters
-        self._chat_params = self._get_chat_params()
+        self._chat_params = chat.Params()
 
         # chat helpers
         self._gpt = chat.Chat()
@@ -258,7 +255,6 @@ class MainWindow(QMainWindow):
         self._a_reset_chat.triggered.connect(self.reset_chat_context)
         self._a_paramsdialog = self._create_action("&Parameters...", "Ctrl+p")
         self._a_paramsdialog.triggered.connect(self.open_params_dialog)
-        self._a_paramsdialog.setDisabled(True)  # TODO
 
         self._gpt_actions = self._create_gpt_actions()
 
@@ -286,12 +282,6 @@ class MainWindow(QMainWindow):
             return Config.from_json(LAST_USED_CONFIG)
         except (FileNotFoundError, json.JSONDecodeError):
             return Config()
-
-    def _get_chat_params(self):
-        try:
-            return chat.Params.from_json(LAST_USED_CHAT_PARAMS)
-        except (FileNotFoundError, json.JSONDecodeError):
-            return chat.Params()
 
     def _create_action(self, text: str, shortcut: str) -> QAction:
         action = QAction(text, self)
@@ -605,8 +595,6 @@ class MainWindow(QMainWindow):
             if msg_box.exec() == _.No:
                 event.ignore()
         else:
-            # Save current GPT parameters
-            # json_dump(self._chat_params, filepath=LAST_USED_CHAT_PARAMS)
             # Save current LaTeX settings
             settings = self.settings_frame.get_settings()
             if not os.path.isdir(SETTINGS_DIR):
@@ -936,6 +924,7 @@ class MainWindow(QMainWindow):
     def open_params_dialog(self):
         w = ParamsDialog()
         w.setWindowTitle("Chat Completion Parameters")
+        w.setGeometry(self._config.window_x + 40, self._config.window_y + 40, 480, 600)
         w.load_params(self._chat_params)
 
         def _update_params():
@@ -999,9 +988,6 @@ class GptWindow(QDialog):
 
     def get_prompt(self):
         return self.editor.toPlainText()
-
-    def set_prompt(self, prompt):
-        self.editor.setPlainText(prompt)
 
 
 class ConfigDialog(QDialog):
@@ -1075,79 +1061,146 @@ class ParamsDialog(QDialog):
 
         params_frame = QFrame(self)
         layout.addWidget(params_frame)
-        params_layout = QGridLayout()
-        params_layout.setHorizontalSpacing(15)
-        params_layout.setVerticalSpacing(5)
-        params_frame.setLayout(params_layout)
+        self._params_layout = QGridLayout()
+        self._params_layout.setHorizontalSpacing(15)
+        self._params_layout.setVerticalSpacing(5)
+        params_frame.setLayout(self._params_layout)
+        self._params_layout.setColumnStretch(0, 0)
+        self._params_layout.setColumnStretch(1, 1)
 
         # model
         row = 0
-        params_layout.addWidget(QLabel("Model"), row, 0)
+        self._params_layout.addWidget(QLabel("<b>Model</b>"), row, 0)
         self.model_selector = QComboBox(self)
-        self.model_selector.addItems(["gpt-3.5-turbo", "gpt-4", "text-davinci-003"])
-        params_layout.addWidget(self.model_selector, row, 1)
+        self.model_selector.addItems(["gpt-3.5-turbo", "gpt-4"])
+        self.model_selector.setDisabled(True)
+        self._params_layout.addWidget(self.model_selector, row + 1, 0)
 
-        row += 1
-        params_layout.addItem(spacer20, row, 0)
+        row += 2
+        self._params_layout.addItem(spacer20, row, 0)
 
         # temperature
         row += 1
-        params_layout.addWidget(QLabel("Temperature"), row, 0)
+        self._params_layout.addWidget(QLabel("<b>Temperature</b>"), row, 0)
+
         self.temperature_check = QCheckBox("Use Default", self)
-        params_layout.addWidget(self.temperature_check, row, 1)
+        self._params_layout.addWidget(self.temperature_check, row + 1, 0)
         self.temperature_selector = QDoubleSpinBox(self)
         self.temperature_selector.setMinimum(0.0)
         self.temperature_selector.setMaximum(2.0)
         self.temperature_selector.setSingleStep(0.1)
-        params_layout.addWidget(self.temperature_selector, row + 1, 1)
+        self._params_layout.addWidget(self.temperature_selector, row + 2, 0)
+        temperature_standin = QLabel()
+        self._params_layout.addWidget(temperature_standin, row + 2, 0)
 
-        row += 2
-        params_layout.addItem(spacer10, row, 0)
+        self._create_explanation(
+            row,
+            "What sampling temperature to use, between 0 and 2. "
+            "Higher values like 0.8 will make the output more random, "
+            "while lower values like 0.2 will make it more focused and deterministic. "
+            "OpenAI remcommends that you alter this value or <b>top p</b> but not both.",
+        )
+
+        row += 5
+        self._params_layout.addItem(spacer10, row, 0)
 
         # top_p
         row += 1
-        params_layout.addWidget(QLabel("Top P"), row, 0)
+        self._params_layout.addWidget(QLabel("<b>Top P</b>"), row, 0)
+
         self.top_p_check = QCheckBox("Use Default", self)
-        params_layout.addWidget(self.top_p_check, row, 1)
+        self._params_layout.addWidget(self.top_p_check, row + 1, 0)
         self.top_p_selector = QDoubleSpinBox(self)
         self.top_p_selector.setMinimum(0.0)
         self.top_p_selector.setMaximum(1.0)
         self.top_p_selector.setSingleStep(0.1)
-        params_layout.addWidget(self.top_p_selector, row + 1, 1)
+        self._params_layout.addWidget(self.top_p_selector, row + 2, 0)
+        top_p_standin = QLabel()
+        self._params_layout.addWidget(top_p_standin, row + 2, 0)
 
-        row += 2
-        params_layout.addItem(spacer10, row, 0)
+        self._create_explanation(
+            row,
+            "An alternative to sampling with temperature, "
+            "where the model considers the results of the tokens with <b>top p</b> probability mass. "
+            "So 0.1 means only the tokens comprising the top 10% probability mass are considered. "
+            "OpenAI recommends that you alter this value or <b>temperature</b> but not both.",
+        )
+
+        row += 5
+        self._params_layout.addItem(spacer10, row, 0)
 
         # presence penalty
         row += 1
-        params_layout.addWidget(QLabel("Presence Penalty"), row, 0)
+        self._params_layout.addWidget(QLabel("<b>Presence Penalty</b>"), row, 0)
+
         self.pres_penalty_check = QCheckBox("Use Default", self)
-        params_layout.addWidget(self.pres_penalty_check, row, 1)
+        self._params_layout.addWidget(self.pres_penalty_check, row + 1, 0)
         self.pres_penalty_selector = QDoubleSpinBox(self)
         self.pres_penalty_selector.setMinimum(-2.0)
         self.pres_penalty_selector.setMaximum(2.0)
         self.pres_penalty_selector.setSingleStep(0.1)
-        params_layout.addWidget(self.pres_penalty_selector, row + 1, 1)
+        self._params_layout.addWidget(self.pres_penalty_selector, row + 2, 0)
+        pres_penalty_standin = QLabel()
+        self._params_layout.addWidget(pres_penalty_standin, row + 2, 0)
 
-        row += 2
-        params_layout.addItem(spacer10, row, 0)
+        self._create_explanation(
+            row,
+            "Number between -2.0 and 2.0. Positive values penalize new tokens "
+            "based on whether they appear in the text so far, "
+            "increasing the model's likelihood to talk about new topics.",
+        )
+
+        row += 5
+        self._params_layout.addItem(spacer10, row, 0)
 
         # frequency penalty
         row += 1
-        params_layout.addWidget(QLabel("Frequency Penalty"), row, 0)
+        self._params_layout.addWidget(QLabel("<b>Frequency Penalty</b>"), row, 0)
+
         self.freq_penalty_check = QCheckBox("Use Default", self)
-        params_layout.addWidget(self.freq_penalty_check, row, 1)
+        self._params_layout.addWidget(self.freq_penalty_check, row + 1, 0)
         self.freq_penalty_selector = QDoubleSpinBox(self)
         self.freq_penalty_selector.setMinimum(-2.0)
         self.freq_penalty_selector.setMaximum(2.0)
         self.freq_penalty_selector.setSingleStep(0.1)
-        params_layout.addWidget(self.freq_penalty_selector, row + 1, 1)
+        self._params_layout.addWidget(self.freq_penalty_selector, row + 2, 0)
+        freq_penalty_standin = QLabel()
+        self._params_layout.addWidget(freq_penalty_standin, row + 2, 0)
+
+        self._create_explanation(
+            row,
+            "Number between -2.0 and 2.0. Positive values penalize new tokens "
+            "based on their existing frequency in the text so far, "
+            "decreasing the model's likelihood to repeat the same line verbatim.",
+        )
 
         # link check states to selectors
-        self.temperature_check.stateChanged.connect(self._on_temperature_check)
-        self.top_p_check.stateChanged.connect(self._on_top_p_check)
-        self.pres_penalty_check.stateChanged.connect(self._on_pres_penalty_check)
-        self.freq_penalty_check.stateChanged.connect(self._on_freq_penalty_check)
+        self.temperature_check.stateChanged.connect(
+            lambda: self._toggle_selector(
+                self.temperature_check,
+                self.temperature_selector,
+                temperature_standin,
+            )
+        )
+        self.top_p_check.stateChanged.connect(
+            lambda: self._toggle_selector(
+                self.top_p_check, self.top_p_selector, top_p_standin
+            )
+        )
+        self.pres_penalty_check.stateChanged.connect(
+            lambda: self._toggle_selector(
+                self.pres_penalty_check,
+                self.pres_penalty_selector,
+                pres_penalty_standin,
+            )
+        )
+        self.freq_penalty_check.stateChanged.connect(
+            lambda: self._toggle_selector(
+                self.freq_penalty_check,
+                self.freq_penalty_selector,
+                freq_penalty_standin,
+            )
+        )
 
         # ok button
         button_frame = QFrame(self)
@@ -1159,21 +1212,24 @@ class ParamsDialog(QDialog):
             self.ok_button, alignment=Qt.AlignmentFlag.AlignRight
         )
 
-    def _on_temperature_check(self):
-        use_default = self.temperature_check.isChecked()
-        self.temperature_selector.setDisabled(use_default)
+    def _create_explanation(self, row: int, text: str):
+        label = QLabel(f'<span style="color: #696969;">{text}</span>')
+        label.setWordWrap(True)
+        self._params_layout.addWidget(label, row, 1, 4, 1)  # span 3 rows
+        # allow the 2nd and 4th row to expand
+        self._params_layout.setRowStretch(row + 1, 1)
+        self._params_layout.setRowStretch(row + 3, 1)
+        self._params_layout.setAlignment(label, Qt.AlignmentFlag.AlignTop)
 
-    def _on_top_p_check(self):
-        use_default = self.top_p_check.isChecked()
-        self.top_p_selector.setDisabled(use_default)
-
-    def _on_pres_penalty_check(self):
-        use_default = self.pres_penalty_check.isChecked()
-        self.pres_penalty_selector.setDisabled(use_default)
-
-    def _on_freq_penalty_check(self):
-        use_default = self.freq_penalty_check.isChecked()
-        self.freq_penalty_selector.setDisabled(use_default)
+    def _toggle_selector(
+        self, checkbox: QCheckBox, selector: QDoubleSpinBox, standin: QLabel
+    ):
+        if checkbox.isChecked():
+            selector.hide()
+            standin.show()
+        else:
+            standin.hide()
+            selector.show()
 
     def get_params(self):
         params = chat.Params()
