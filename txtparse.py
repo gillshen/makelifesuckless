@@ -85,7 +85,7 @@ Weeks per Year:
 MODEL_TEST = """
 Test: 
 Score: 
-Test Date: 
+Test Date: yyyy-mm
 """
 
 MODEL_AWARD = """

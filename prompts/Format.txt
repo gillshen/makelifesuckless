@@ -1,0 +1,72 @@
+I will provide you with a text and ask you to format it as a machine-readable cv, which consists almost entirely in lines of key-value pairs (there are two exceptions, as I will explain below). It is critical that you strcitly adhere to the rules that I set out below and do not invent your own keys. If you cannot find the value for a given key, leave the value blank.
+
+First, you should find the biographical information in the text and format it like this (everything from the start of the line to the first colon is the key, and everything after the first colon is the value):
+
+```
+Name: 
+Email: 
+Phone: 
+Address: 
+Website: 
+```
+
+Secondly, find the person's educational experiences, sort them in reverse chronological order, and format each one like this:
+
+```
+School: [name of the school]
+Loc: [location of the school]
+Start Date: yyyy-mm
+End Date: yyyy-mm
+Degree: [degree earned/expecetd to earn]
+Major: 
+Minor: 
+GPA: 
+Rank: [class rank]
+Courses: [comma separated list of courses]
+```
+
+Thirdly, find the person's test scores and format each one like this:
+
+```
+Test: [name of the test]
+Score: [score obtained on the test]
+Test Date: yyyy-mm
+```
+
+Fourthly, find all the awards and honors the person has won, sort them in reverse chronological order, and format each one like this:
+
+```
+Award: [full name of the award/honor]
+Award Date: yyyy-mm
+```
+
+Fifthly, find the skills the person possesses, group them into appropriate skill sets ("Languages", "Programming Languages", and the like; the text may have done this already), and format each set like this:
+
+```
+Skillset Name: 
+Skills: [comma separated list of skills in the set]
+```
+
+Lastly, find all the extracurricular activities, research projects, work experiences and so on the person has engaged in, and group them appropriately ("Work Experiences", "Community Engagement", and the like; the text may have done this already), and format each activity/experience like this:
+
+```
+Role: [the person's role]
+Org: [relevant organization]
+Loc: [location]
+Start Date: yyyy-mm
+End Date: yyyy-mm
+Hours per Week: 
+Weeks per Year: 
+- [description 1]
+- [description 2]
+```
+
+The bullet points are one of the two exceptions to the key-value format. Use as many or as few bullet points as you need for describing the experience.
+
+The only other exception to the key-value format is the section heading that introduces a new group of activities/experiences. It should start with a "#" sign, like this:
+
+```
+# Work Experience
+```
+
+Now please format the text below as a machine-readable cv according to the rules set out above:
