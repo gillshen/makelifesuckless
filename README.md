@@ -2,7 +2,7 @@
 LaTeX-based cv typesetting tool
 
 - [适用人群](#适用人群)
-- [New in v0.2](#new-in-v02)
+- [Change Log](#change-log)
 - [使用前提和下载方法](#使用前提和下载方法)
 - [使用](#使用)
 - [源文件格式](#源文件格式)
@@ -16,12 +16,22 @@ LaTeX-based cv typesetting tool
 - 赞同“写作者应当专注于内容，排版这种事不如交给程序”这一思想的人士
 - 觉得在自己的文档和网页版ChatGPT之间来回复制粘贴很麻烦的人士
 
-## New in v0.2
+## Change Log
+
+### v0.4
+
+- 可读取Word文档
+- 自动保存ChatGPT对话记录
+
+### v0.3
+
+- 自动生成案例梳理Excel（须使用ChatGPT）
+
+### v0.2
 
 - 植入ChatGPT, 用法[见下](#chatgpt)
 - 实现语法高亮
 - 增加关键词`rank`
-- 修复一些样式和排版上的bugs
 
 ## 使用前提和下载方法
 
@@ -34,34 +44,44 @@ LaTeX-based cv typesetting tool
 
 1. 点击本页上方绿色的Code按钮，然后Download zip
 2. 解压下载的文件
-3. 在解压得到的文件夹下找到`v0.2`文件夹（以下称为**主目录**），把它拖到一个方便的位置，其他东西（Python源码）可以删了
+3. 在解压得到的文件夹下找到`v0.4`文件夹（以下称为**主目录**），把它拖到一个方便的位置，其他东西（Python源码）可以删了
 
 ## 使用
 
 打开主目录，双击`main.exe`, 会看到如下界面：
 
-![1685329910961](https://github.com/gillshen/makelifesuckless/assets/100059605/ad0cf216-b88d-43d7-a87a-1e9af5a28135)
+![image](https://github.com/gillshen/makelifesuckless/assets/100059605/de541b5f-d015-4d1c-b7a9-321a6d4635ac)
 
 左上是一个纯文本编辑器；左下是console, 用于显示LaTeX编译状况和与ChatGPT交流；右边是排版设置。三个模块的相对大小可以拖动改变。
 
-点击右下角`Run LaTeX`, 编辑器里的内容会被编译成一个**名为`output.pdf`的文件，保存在主目录里**。
+### 生成简历PDF
 
 我们来演示一下。打开主目录下`samples`文件夹里的简历样本`sample1.txt`（`File` -> `Open`，或者`Ctrl+O`，用别的程序打开后复制粘贴到编辑器里），如下图所示：
 
 ![1685330125631](https://github.com/gillshen/makelifesuckless/assets/100059605/0be430aa-ae81-47ff-8798-780525ba8659)
+
+或者打开`sample2.docx`, 结果大同小异（唯一的不同是Word文档里的超链接无法还原）。
 
 右边的设定可以随便更改，但字体：
 
 - 必须是TrueType或OpenType字体（Windows预装字体多数是TrueType, 没问题，但图中显示的MS Sans Serif不是，会导致编译失败）
 - 字体名不能是中文（如选择“宋体”，会导致编译失败）
 
-点击`Run LaTeX`, 如果编译成功，PDF会自动打开，效果大致如下（图中的字体是[EB Garamond](https://fonts.google.com/specimen/EB+Garamond), with old style numbers）：
+点击右下角`Run LaTeX`, 如果编译成功，PDF会自动打开，效果大致如下（图中的字体是[EB Garamond](https://fonts.google.com/specimen/EB+Garamond), with old style numbers）：
 
 ![1685330334875](https://github.com/gillshen/makelifesuckless/assets/100059605/016d2bc1-4c1f-4879-a100-aaab9be77984)
 
 ![1685330391113](https://github.com/gillshen/makelifesuckless/assets/100059605/fd55b47f-2fe3-4e67-a287-e313e6fc116b)
 
-每一次编译都会覆盖主目录下的`output.pdf`（如果已存在）。如果想保留它，请及时另存。
+每一次编译都会生成一个文件名以`output_`开头、带timestamp的文件，保存在主目录下的`output`文件夹里。
+
+### 生成案例梳理Excel
+
+`File` -> 'Create Excel`（或者`Ctrl+Shift+X`），即可自动生成案例梳理Excel, 效果如下：
+
+![image](https://github.com/gillshen/makelifesuckless/assets/100059605/d2995f99-d801-426e-8755-8e22c9eb89fb)
+
+中文翻译是ChatGPT做的，每次生成的结果会略有不同。
 
 ## 源文件格式
 
@@ -179,10 +199,9 @@ role: zzz
 
 ## ChatGPT
 
-要使用这个功能，你需要一个OpenAI的API key. 两个获取途径：
+要使用这个功能，你需要一个OpenAI的API key. 首先注册OpenAI账号，然后[在用户设置中获取](https://help.openai.com/en/articles/4936850-where-do-i-find-my-secret-api-key)；需要付费，虽然不贵（gpt-3.5-turbo的价钱是$0.002 per 1000 tokens）不过中国境内支付会比较麻烦。
 
-- 注册OpenAI账号，然后[在用户设置中获取](https://help.openai.com/en/articles/4936850-where-do-i-find-my-secret-api-key)；需要付费，虽然不贵（gpt-3.5-turbo的价钱是$0.002 per 1000 tokens）但在中国境内支付会比较麻烦
-- 使用GitHub网友Pawan Osman搭建的反向代理服务器，加入TA的Discord即可获得API Key, 免费；具体操作见[该项目页面](https://github.com/PawanOsman/ChatGPT)（我不能保证TA不会监视你和OpenAI之间的通讯，介意的话不要使用）
+另一个选择是GitHub网友Pawan Osman搭建的反向代理服务器。加入TA的Discord即可免费获得一个API Key, 具体体操作见[该项目页面](https://github.com/PawanOsman/ChatGPT)。这个服务器连接的似乎不是ChatGPT本体而是一个弱化的版本（虽然一般情况下也很好用），我也不能保证你发出的信息不会通讯，介意的话不要使用。使用这个服务器时可能需要关闭VPN.
 
 不管选哪个，你需要在**主目录**下创建一个名为`keys.json`的文件，把你的API key粘贴进去。格式如下：
 
@@ -203,7 +222,7 @@ role: zzz
 }
 ```
 
-快捷键`Ctrl+E`（或工具栏`ChatGPT` -> `Enter Prompt...`）可以打开prompt输入窗。输入prompt后发送，正常的话几秒内console会显示ChatGPT的回复。
+快捷键`Ctrl+E`（或工具栏`ChatGPT` -> `Enter Prompt...`）可以打开prompt输入窗。输入prompt后发送，通常几秒内console会显示ChatGPT的回复。
 
 ![1685333679167](https://github.com/gillshen/makelifesuckless/assets/100059605/53107b3d-cabf-4c6b-90b6-aa5a626a7f62)
 
@@ -213,7 +232,9 @@ role: zzz
 
 如果经常输入同一prompt，建议把这个prompt写成一个txt文件，取一个合适的文件名，比如`Proofread.txt`, 放到主目录下的`prompts`文件夹里。重启程序后工具栏和右键快捷菜单里就会出现`Proofread`命令，点击即可实现prompt输入发送。
 
-`prompts`文件夹里预置了三个prompt文件：`Polish.txt`, `Translate.txt`, `Name the Role.txt`，可以按需修改或删除。
+`prompts`文件夹里预置了四个prompt文件：`Format.txt`, `Polish.txt`, `Translate.txt`, `Name the Role.txt`，可以按需修改或删除。
+
+用户输入的prompt和ChatGPT的回复会以`csv`格式自动保存在主目录下`chat_history`文件夹里。
 
 ## 常见问题
 
