@@ -204,7 +204,7 @@ role: zzz
 
 另一个选择是GitHub网友Pawan Osman搭建的反向代理服务器。加入TA的Discord即可免费获得一个API Key, 具体体操作见[该项目页面](https://github.com/PawanOsman/ChatGPT)。这个服务器连接的似乎不是ChatGPT本体而是一个弱化的版本（虽然一般情况下也很好用），我也不能保证你发出的信息不会通讯，介意的话不要使用。使用这个服务器时可能需要关闭VPN.
 
-不管选哪个，你需要在**主目录**下创建一个名为`keys.json`的文件，把你的API key粘贴进去。格式如下：
+不管选哪个，你需要在**主目录**下创建一个名为`chat_settings.json`的文件，把你的API key粘贴进去。格式如下：
 
 如果是官方API key（"sk-"开头的一长串字符）：
 
