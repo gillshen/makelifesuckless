@@ -7,14 +7,19 @@ import argparse
 import openai
 import tiktoken
 
+MAX_TOKENS = 4097
+
 try:
-    with open("keys.json", encoding="utf-8") as f:
-        cred = json.load(f)
-    openai.api_key = cred["key"]
-    if "base" in cred:
-        openai.api_base = cred["base"]
-except FileNotFoundError:
-    openai.api_key = openai.api_base = ""
+    with open("chat_settings.json", encoding="utf-8") as f:
+        chat_settings = json.load(f)
+    openai.api_key = chat_settings["key"]
+    if "base" in chat_settings:
+        openai.api_base = chat_settings["base"]
+    if "max_tokens" in chat_settings:
+        MAX_TOKENS = chat_settings["max_tokens"]
+    del chat_settings
+except (FileNotFoundError, json.JSONDecodeError):
+    openai.api_key = ""
 
 try:
     tiktoken.get_encoding("cl100k_base")
@@ -22,8 +27,6 @@ try:
     _TIKTOKEN_READY = True
 except Exception:
     _TIKTOKEN_READY = False
-
-_MAX_TOKENS = 4096
 
 
 @dataclasses.dataclass
@@ -93,7 +96,7 @@ class Chat:
         while (
             self.token_count(model)
             + self.context_pair_length(model, q=self.reserve_level)
-            > _MAX_TOKENS
+            > MAX_TOKENS
         ):
             self.messages.remove(self.context[0])
             self.messages.remove(self.context[0])

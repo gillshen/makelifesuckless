@@ -177,7 +177,7 @@ settings/last_used.json
 v*/settings/last_used.json
 v*/config
 dist(-\d+(\.\d+)?)?
-keys.json
+chat_settings.json
 
 *.xlsx
 

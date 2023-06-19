@@ -451,7 +451,7 @@ class MainWindow(QMainWindow):
         def _on_completion_success():
             self.console.xappend("")
             tokens_used = self._gpt.token_count(self._chat_params.model)
-            self._console_log(f">>> {tokens_used}/{chat._MAX_TOKENS}")
+            self._console_log(f">>> {tokens_used}/{chat.MAX_TOKENS}")
             self.console.xappend("")
             self._set_gpt_enabled(True)
             # save the prompt and the completion
