@@ -169,15 +169,17 @@ cython_debug/
 *.synctex.gz
 *.pdf
 output*.*
+config
+chat_history
+chat_settings.json
+
 src/tests/test_*.*
-src/config
-src/config/last_used.json
-src/chat_history
 src/settings/last_used.json
+
 v*/settings/last_used.json
 v*/config
+
 dist(-\d+(\.\d+)?)?
-chat_settings.json
 
 *.xlsx
 
