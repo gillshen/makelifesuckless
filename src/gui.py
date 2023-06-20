@@ -124,6 +124,7 @@ class MainWindow(QMainWindow):
         self._chat_threads = []
         self._excel_threads = []
         self._chat_history = None  # holds the path to the chat history file
+        self._wait_count = 0
 
         # references to stand-alone GPT prompt windows
         self._prompt_window = GptWindow()
@@ -441,19 +442,9 @@ class MainWindow(QMainWindow):
             pass
         self._chat_threads.append(thread)
 
+        thread.waiting.connect(self._signal_wait)
         thread.progress.connect(self._stream_completion)
-
-        def _on_wait_finish():
-            # remove the periods that have been printed
-            cursor = self.console.textCursor()
-            cursor.movePosition(QTextCursor.MoveOperation.End)
-            cursor.movePosition(
-                QTextCursor.MoveOperation.StartOfLine,
-                QTextCursor.MoveMode.KeepAnchor,
-            )
-            cursor.removeSelectedText()
-
-        thread.wait_finished.connect(_on_wait_finish)
+        thread.wait_finished.connect(self.console.remove_line)
 
         def _on_completion_success():
             self.console.xappend("")
@@ -496,6 +487,14 @@ class MainWindow(QMainWindow):
             self.write_chat_history((timestamp(), "system", self._gpt.system_message))
 
         thread.start()
+
+    def _signal_wait(self, signal: str):
+        self.console.insertPlainText(signal)
+        self._wait_count += 1
+        if self._wait_count > 5:
+            self.console.remove_line()
+            self._wait_count = 0
+        self.console.ensureCursorVisible()
 
     def _stream_completion(self, content: str):
         self.console.insertPlainText(content)
@@ -1761,10 +1760,19 @@ class Console(QTextEdit):
         self.append(text)
         self.ensureCursorVisible()
 
+    def remove_line(self):
+        cursor = self.textCursor()
+        cursor.movePosition(QTextCursor.MoveOperation.End)
+        cursor.movePosition(
+            QTextCursor.MoveOperation.StartOfLine,
+            QTextCursor.MoveMode.KeepAnchor,
+        )
+        cursor.removeSelectedText()
+
 
 class ChatThread(QThread):
+    waiting = pyqtSignal(str)
     progress = pyqtSignal(str)
-    waiting = pyqtSignal()
     wait_finished = pyqtSignal()
     finished = pyqtSignal()
     error = pyqtSignal(Exception)
@@ -1811,7 +1819,7 @@ class ChatThread(QThread):
             self.finished.emit()
 
     def _signal_wait(self):
-        self.progress.emit(". ")
+        self.waiting.emit(". ")
 
     def _on_wait_finish(self):
         self.wait_thread.waiting.disconnect(self._signal_wait)
