@@ -4,6 +4,7 @@ import dataclasses
 import json
 import time
 import datetime
+import html
 import csv
 
 from PyQt6.QtCore import Qt, QProcess, QThread, pyqtSignal
@@ -114,6 +115,9 @@ class MainWindow(QMainWindow):
         # editor and console appearance
         self._config = self._get_config()
 
+        # last saved text (for detecting modification)
+        self._saved_text = ""
+
         # chat completion parameters
         self._chat_params = chat.Params()
         self._params_window = ParamsDialog()
@@ -127,7 +131,7 @@ class MainWindow(QMainWindow):
         self._wait_count = 0
 
         # references to stand-alone GPT prompt windows
-        self._prompt_window = GptWindow()
+        self._prompt_window = PromptWindow()
         self._prompt_window.setWindowTitle("Enter Your Prompt")
         self._prompt_window.resize(400, 320)
         self._prompt_window.send_action.triggered.connect(self._send_prompt)
@@ -150,6 +154,11 @@ class MainWindow(QMainWindow):
         self.document = self.editor.document()
         self.document.setDocumentMargin(6)
         self.editor.textChanged.connect(self._on_editor_change)
+        self.editor.setPlaceholderText(
+            "Ctrl+N to create a blank cv.\n"
+            "Ctrl+O to open an existing document.\n"
+            "Ctrl+E to start chatting with ChatGPT."
+        )
         editor_panel.addWidget(self.editor)
 
         # Console
@@ -280,7 +289,7 @@ class MainWindow(QMainWindow):
         central_widget.setSizes([680, 320])
         editor_panel.setSizes([450, 150])
 
-        self.new_file()
+        self.new_blank_file()
         self._load_initial_settings()
 
     def _get_config(self):
@@ -475,7 +484,7 @@ class MainWindow(QMainWindow):
 
         self._set_gpt_enabled(False)
         self.console.xappend(f">>> Prompt", weight=700)
-        self.console.xappend(prompt)
+        self.console.xappend(html.escape(prompt))
         self.console.xappend("")
         self.console.xappend(f">>> {self._chat_params.model}", weight=700)
         self.console.xappend("")
@@ -765,7 +774,7 @@ class MainWindow(QMainWindow):
         self.setWindowFilePath(self._filepath)
 
     def _on_editor_change(self):
-        self.setWindowModified(self.document.isModified())
+        self.setWindowModified(self.editor.toPlainText() != self._saved_text)
 
     def _console_log(self, text: str):
         self.console.xappend(text, color=self._config.console_log_foreground)
@@ -793,6 +802,7 @@ class MainWindow(QMainWindow):
             self._handle_exc(e)
         else:
             self.editor.setPlainText(text)
+            self._saved_text = text
             # set window title
             self.setWindowModified(False)
             self._filepath = filepath
@@ -814,8 +824,10 @@ class MainWindow(QMainWindow):
         self._open_file(self._filepath)
 
     def _save_file(self, filepath: str):
+        text = self.editor.toPlainText()
         with open(filepath, "w", encoding="utf-8") as f:
-            f.write(self.editor.toPlainText())
+            f.write(text)
+        self._saved_text = text
         self.setWindowModified(False)
 
     def save_file(self):
@@ -959,7 +971,7 @@ class MainWindow(QMainWindow):
         show_info(parent=self, text="Chat context has been reset.")
 
 
-class GptWindow(QDialog):
+class PromptWindow(QDialog):
     def __init__(self):
         super().__init__(None, Qt.WindowType.Window)
         self.send_action = QAction(self)
@@ -970,6 +982,7 @@ class GptWindow(QDialog):
         self.editor = QPlainTextEdit(self)
         self.editor.setFrameShape(QFrame.Shape.NoFrame)
         self.editor.document().setDocumentMargin(6)
+        self.editor.setPlaceholderText("Ctrl+Return to send.")
         layout.addWidget(self.editor)
 
         button_frame = QFrame(self)
